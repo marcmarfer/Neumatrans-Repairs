@@ -3,21 +3,18 @@
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\Vehicle;
+use App\Models\RepairType;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Repair>
- */
 class RepairFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [
-            //
+            'repair_type_id' => RepairType::inRandomOrder()->value('id') ?? RepairType::factory(),
+            'vehicle_id' => Vehicle::inRandomOrder()->value('id') ?? Vehicle::factory(),
+            'description' => $this->faker->sentence,
+            'status' => $this->faker->randomElement(['pending', 'in_progress', 'completed']),
         ];
     }
 }

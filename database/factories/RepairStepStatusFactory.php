@@ -3,21 +3,17 @@
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\Repair;
+use App\Models\RepairTypeStep;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\RepairStepStatus>
- */
 class RepairStepStatusFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [
-            //
+            'repair_id' => Repair::inRandomOrder()->value('id') ?? Repair::factory(),
+            'repair_type_step_id' => RepairTypeStep::inRandomOrder()->value('id') ?? RepairTypeStep::factory(),
+            'status' => $this->faker->randomElement(['pending', 'in_progress', 'completed']),
         ];
     }
 }
