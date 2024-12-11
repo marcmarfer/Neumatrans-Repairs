@@ -1,30 +1,62 @@
 <script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
+import Tile from '@/Components/Tile.vue';
 </script>
 
 <template>
     <Head title="Dashboard" />
 
-    <AuthenticatedLayout>
-        <template #header>
-            <h2
-                class="text-xl font-semibold leading-tight text-gray-800"
-            >
-                Dashboard
-            </h2>
-        </template>
-
-        <div class="py-12">
-            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                <div
-                    class="overflow-hidden bg-white shadow-sm sm:rounded-lg"
-                >
-                    <div class="p-6 text-gray-900">
-                        You're logged in!
-                    </div>
-                </div>
-            </div>
+    <div class="dashboard-container">
+        <div class="tiles-grid">
+            <Tile
+                title="Users"
+                description="User management page"
+                link="/users"
+            />
+            <Tile
+                title="Vehicles"
+                description="Vehicles management page"
+                link="/vehicles"
+            />
+            <Tile
+                title="Repairs"
+                description="Repairs management page"
+                link="/reports"
+            />
+            <Tile
+                title="Buys"
+                description="Buys management page"
+                link="/buys"
+            />
+            <Tile
+                title="Buys"
+                description="Buys management page"
+                link="/buys"
+            />
+            <Tile
+                title="Ejemplo 1"
+                description="Ejemplo 1 management page"
+                link="/ejemplo1"
+            />
         </div>
-    </AuthenticatedLayout>
+    </div>
 </template>
+
+<style scoped>
+.dashboard-container {
+    min-height: 100vh;
+    background: linear-gradient(to top right, #1C4EBF, #0c178f);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
+
+.tiles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    width: 80%;
+    height: 90vh;
+}
+</style>
