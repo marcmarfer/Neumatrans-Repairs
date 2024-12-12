@@ -14,7 +14,7 @@ class RepairTypeStep extends Model
         return $this->belongsTo(RepairType::class);
     }
 
-    public function repairStepStatuses()
+    public function repairStepStatus()
     {
         return $this->hasMany(RepairStepStatus::class);
     }

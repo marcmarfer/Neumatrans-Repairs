@@ -4,6 +4,7 @@ defineProps({
     description: String,
     link: String,
     width: String,
+    height: String,
     bgColor: String,
 });
 </script>
@@ -13,8 +14,9 @@ defineProps({
         :href="link" 
         class="tile-container" 
         :style="{
-            backgroundColor: bgColor || 'rgba(255, 255, 255, 0.90)',
+            backgroundColor: bgColor || '#ffffff',
             width: width || '100%',
+            height: height || '100%'
         }"
     >
         <div class="tile-content">
@@ -27,11 +29,12 @@ defineProps({
 
 <style scoped>
 .tile-container {
+    color: white;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+    box-shadow: rgba(0, 0, 0, 0.3) 10px 10px 15px;
     cursor: pointer;
     overflow: hidden;
     transition: transform 0.3s ease;
@@ -48,13 +51,12 @@ defineProps({
 }
 
 .tile-title {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: bold;
-    color: #333;
 }
 
 .tile-description {
     font-size: 1rem;
-    color: #666;
+    color: #dfdfdf;
 }
 </style>

@@ -9,12 +9,12 @@ class RepairType extends Model
 {
     use HasFactory;
 
-    public function repairs()
+    public function repair()
     {
         return $this->hasMany(Repair::class);
     }
 
-    public function repairTypeSteps()
+    public function repairTypeStep()
     {
         return $this->hasMany(RepairTypeStep::class);
     }

@@ -8,13 +8,16 @@ use App\Models\Repair;
 use App\Models\RepairType;
 use App\Models\RepairTypeStep;
 use App\Models\RepairStepStatus;
+use App\Models\Client;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        User::factory(10)->create();
+        User::factory(5)->create();
+        
+        Client::factory(20)->create();
 
         Vehicle::factory(15)->create();
 

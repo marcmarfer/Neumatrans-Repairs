@@ -9,9 +9,9 @@ class Vehicle extends Model
 {
     use HasFactory;
 
-    public function user()
+    public function clients()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Client::class);
     }
 
     public function repairs()
