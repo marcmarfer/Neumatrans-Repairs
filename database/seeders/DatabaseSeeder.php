@@ -9,6 +9,8 @@ use App\Models\RepairType;
 use App\Models\RepairTypeStep;
 use App\Models\RepairStepStatus;
 use App\Models\Client;
+use App\Models\DeliveryNote;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -16,7 +18,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         User::factory(5)->create();
-        
+
         Client::factory(20)->create();
 
         Vehicle::factory(15)->create();
@@ -29,7 +31,9 @@ class DatabaseSeeder extends Seeder
             ]);
         });
 
-        $repairs = Repair::factory(20)->create();
+        $repairs = Repair::factory(20)->create([
+            'started_at' => Carbon::now()->toDateString(),
+        ]);
 
         $repairs->each(function ($repair) {
             $repairTypeSteps = RepairTypeStep::where('repair_type_id', $repair->repair_type_id)->get();
@@ -41,5 +45,13 @@ class DatabaseSeeder extends Seeder
                 ]);
             }
         });
+
+        DeliveryNote::factory(10)->create([
+            'added_at' => Carbon::now()->toDateString(),
+            'RRP' => 100.00,
+            'cost' => 60.00,
+            'margin' => 40.00,
+            'profit' => 40.00,
+        ]);
     }
 }

@@ -14,7 +14,9 @@ class VehicleFactory extends Factory
             'plate_number' => strtoupper($this->faker->unique()->bothify('??###??')),
             'brand' => $this->faker->company,
             'model' => $this->faker->word,
-            'year' => $this->faker->year
+            'VIN' => strtoupper($this->faker->unique()->bothify('?????????????????')),
+            'motor_type' => $this->faker->word,
+            'added_at' => $this->faker->date(),
         ];
     }
 }

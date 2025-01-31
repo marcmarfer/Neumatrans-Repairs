@@ -13,8 +13,9 @@ class RepairFactory extends Factory
         return [
             'repair_type_id' => RepairType::inRandomOrder()->value('id') ?? RepairType::factory(),
             'vehicle_id' => Vehicle::inRandomOrder()->value('id') ?? Vehicle::factory(),
-            'description' => $this->faker->sentence,
+            'observations' => $this->faker->sentence,
             'status' => $this->faker->randomElement(['pending', 'in_progress', 'completed']),
+            'started_at' => $this->faker->date(),
         ];
     }
 }

@@ -12,9 +12,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('client_id')->constrained('clients')->onDelete('cascade');
             $table->string('plate_number')->unique();
-            $table->string('brand')->nullable();
-            $table->string('model')->nullable();
-            $table->year('year')->nullable();
+            $table->string('brand');
+            $table->string('model');
+            $table->string('VIN')->unique()->nullable();
+            $table->string('motor_type')->nullable();
+            $table->date('added_at');
             $table->timestamps();
         });
     }

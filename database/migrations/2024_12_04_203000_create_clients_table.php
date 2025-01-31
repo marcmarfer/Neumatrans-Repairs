@@ -12,6 +12,11 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+            $table->string('telephone')->nullable();
+            $table->string('city')->nullable();
+            $table->string('postal_code')->nullable();
+            $table->string('DNI')->unique()->nullable();
+            $table->date('registered_at');
             $table->timestamps();
         });
     }

@@ -11,6 +11,11 @@ class ClientFactory extends Factory
         return [
             'name' => $this->faker->word,
             'email' => $this->faker->unique()->safeEmail,
+            'telephone' => $this->faker->phoneNumber,
+            'city' => $this->faker->city,
+            'postal_code' => $this->faker->postcode,
+            'DNI' => strtoupper($this->faker->unique()->bothify('########??')),
+            'registered_at' => $this->faker->date(),
         ];
     }
 }
