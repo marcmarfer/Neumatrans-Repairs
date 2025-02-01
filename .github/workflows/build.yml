@@ -65,7 +65,9 @@ jobs:
             sed -i "s/DB_DATABASE=.*/DB_DATABASE=${{ secrets.DB_DATABASE }}/" .env
             sed -i "s/DB_USERNAME=.*/DB_USERNAME=${{ secrets.DB_USERNAME }}/" .env
             sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DB_PASSWORD }}/" .env
+            mysql -u ${{ secrets.DB_USERNAME }} -p${{ secrets.DB_PASSWORD }} -e "DROP DATABASE IF EXISTS ${{ secrets.DB_DATABASE }}; CREATE DATABASE ${{ secrets.DB_DATABASE }};"
             php artisan migrate --force
+            php artisan db:seed --force
             php artisan storage:link
             mkdir -p storage/framework/views
             chown -R www-data:www-data storage
