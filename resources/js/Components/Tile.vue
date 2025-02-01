@@ -1,4 +1,5 @@
 <script setup>
+import { router } from '@inertiajs/vue3';
 defineProps({
     title: String,
     description: String,
@@ -10,8 +11,8 @@ defineProps({
 </script>
 
 <template>
-    <a 
-        :href="link" 
+    <div 
+        @click="router.get(link)"
         class="tile-container" 
         :style="{
             backgroundColor: bgColor || '#ffffff',
@@ -23,7 +24,7 @@ defineProps({
             <h3 class="tile-title">{{ title }}</h3>
             <p class="tile-description">{{ description }}</p>
         </div>
-    </a>
+    </div>
 </template>
 
 

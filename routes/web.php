@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\VehicleController;
+use App\Http\Controllers\RepairController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -31,5 +33,7 @@ Route::get('/api/user-logged-in', [UserController::class, 'getUserLoggedIn'])->n
 
 //pages routes
 Route::get('/clients', [ClientController::class, 'index'])->name('clients');
+Route::get('/vehicles', [VehicleController::class, 'index'])->name('vehicles');
+Route::get('/repairs', [RepairController::class, 'index'])->name('repairs');
 
 require __DIR__.'/auth.php';
