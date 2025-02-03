@@ -21,7 +21,7 @@ onMounted(() => {
 
     
     <div class="dashboard-container">
-        <h1 class="">Welcome back to Neumatrans-repairs! You are logged in with the account {{ userName }}</h1>
+        <h1 class="">Welcome back to the Neumatrans dashboard! You are logged in with the account {{ userName }}</h1>
         <div class="tiles-grid">
             <Tile
                 title="Clients"
