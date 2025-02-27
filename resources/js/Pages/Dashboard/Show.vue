@@ -1,0 +1,59 @@
+<script setup>
+import { Head, router } from '@inertiajs/vue3';
+import Tile from '@/Components/Tile.vue';
+
+const props = defineProps({
+    user: Object,
+    required: true
+});
+
+const navigateToClients = () => router.get('/clients');
+const navigateToVehicles = () => router.get('/vehicles');
+const navigateToRepairs = () => router.get('/repairs');
+const navigateToBuys = () => router.get('/buys');
+</script>
+
+<template>
+    <Head title="Dashboard" />
+    
+    <div class="min-h-screen flex flex-col px-4 py-12 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto w-full">
+            <h1 class="text-black text-center text-2xl sm:text-3xl font-bold mb-12">
+                Bienvenido a <span class="text-red-600">Neumatrans</span>, {{ props.user.name }}
+            </h1>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <Tile
+                    title="Clientes"
+                    description="Gestión de clientes"
+                    @click="navigateToClients"
+                />
+                <Tile
+                    title="Vehículos"
+                    description="Gestión de vehículos"
+                    @click="navigateToVehicles"
+                />
+                <Tile
+                    title="Reparaciones"
+                    description="Gestión de reparaciones"
+                    @click="navigateToRepairs"
+                />
+                <Tile
+                    title="Compras"
+                    description="Gestión de compras"
+                    @click="navigateToBuys"
+                />
+                <Tile
+                    title="Compras"
+                    description="Gestión de reparaciones"
+                    @click="navigateToBuys"
+                />
+                <Tile
+                    title="Compras"
+                    description="Gestión de compras"
+                    @click="navigateToBuys"
+                />
+            </div>
+        </div>
+    </div>
+</template>

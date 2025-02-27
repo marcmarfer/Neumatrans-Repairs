@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class UserController extends Controller
 {
-    public function getUserLoggedIn()
+    public function show()
     {
         $userLogged = Auth::user();
-        return response()->json($userLogged);
+        return Inertia::render('Dashboard/Show', [
+            'user' => $userLogged
+        ]);
     }
 }
