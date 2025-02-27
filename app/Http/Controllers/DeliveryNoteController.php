@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\DeliveryNote;
+use Inertia\Inertia;
 
 class DeliveryNoteController extends Controller
 {
@@ -11,7 +13,10 @@ class DeliveryNoteController extends Controller
      */
     public function index()
     {
-        //
+        $deliveryNotes = DeliveryNote::all();
+        return Inertia::render('DeliveryNotes/Show', [
+            'delivery_notes' => $deliveryNotes
+        ]);
     }
 
     /**

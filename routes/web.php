@@ -8,6 +8,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\RepairController;
+use App\Http\Controllers\DeliveryNoteController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -29,5 +30,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::get('/clients', [ClientController::class, 'index'])->name('clients');
 Route::get('/vehicles', [VehicleController::class, 'index'])->name('vehicles');
 Route::get('/repairs', [RepairController::class, 'index'])->name('repairs');
+Route::get('/delivery-notes', [DeliveryNoteController::class, 'index'])->name('delivery_notes.show');
 
 require __DIR__.'/auth.php';

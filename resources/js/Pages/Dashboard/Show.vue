@@ -10,7 +10,7 @@ const props = defineProps({
 const navigateToClients = () => router.get('/clients');
 const navigateToVehicles = () => router.get('/vehicles');
 const navigateToRepairs = () => router.get('/repairs');
-const navigateToBuys = () => router.get('/buys');
+const navigateToDeliveryNotes = () => router.get('/delivery-notes');
 </script>
 
 <template>
@@ -41,17 +41,17 @@ const navigateToBuys = () => router.get('/buys');
                 <Tile
                     title="Compras"
                     description="Gestión de compras"
-                    @click="navigateToBuys"
+                    @click="navigateToDeliveryNotes"
                 />
                 <Tile
                     title="Compras"
                     description="Gestión de reparaciones"
-                    @click="navigateToBuys"
+                    @click="navigateToDeliveryNotes"
                 />
                 <Tile
                     title="Compras"
                     description="Gestión de compras"
-                    @click="navigateToBuys"
+                    @click="navigateToDeliveryNotes"
                 />
             </div>
         </div>

@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/vue3';
 import DataTable from '@/Components/DataTable.vue';
 
 const props = defineProps({
-    clients: {
+    delivery_notes: {
         type: Array,
         required: true
     }
@@ -11,29 +11,30 @@ const props = defineProps({
 
 const columns = [
     { key: 'id', label: 'ID' },
-    { key: 'name', label: 'Nombre' },
-    { key: 'email', label: 'Email' },
-    { key: 'telephone', label: 'Teléfono' },
-    { key: 'city', label: 'Ciudad' },
-    { key: 'postal_code', label: 'Código Postal' },
-    { key: 'DNI', label: 'DNI' },
-    { key: 'registered_at', label: 'Fecha de Registro' },
+    { key: 'type', label: 'Tipo' },
+    { key: 'supplier', label: 'Proveedor' },
+    { key: 'family', label: 'Familia' },
+    { key: 'RRP', label: 'PVP' },
+    { key: 'cost', label: 'Coste' },
+    { key: 'margin', label: 'Margen' },
+    { key: 'profit', label: 'Beneficio' },
+    { key: 'added_at', label: 'Fecha de Alta' },
     { key: 'created_at', label: 'Fecha de Creación' }
 ];
 </script>
 
 <template>
-    <Head title="Clientes" />
+    <Head title="Albaranes" />
 
     <div class="container mx-auto py-8 px-4">
         <h1 class="text-2xl font-bold text-gray-800 mb-6">
-            Clientes
+            Albaranes
         </h1>
 
         <DataTable 
-            :data="clients"
+            :data="delivery_notes"
             :columns="columns"
             :items-per-page="10"
         />
     </div>
-</template>
+</template> 

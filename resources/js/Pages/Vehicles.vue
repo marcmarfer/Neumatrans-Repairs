@@ -1,11 +1,39 @@
 <script setup>
+import { Head } from '@inertiajs/vue3';
+import DataTable from '@/Components/DataTable.vue';
+
 const props = defineProps({
-    vehicles: Array
+    vehicles: {
+        type: Array,
+        required: true
+    }
 });
+
+const columns = [
+    { key: 'id', label: 'ID' },
+    { key: 'client_id', label: 'ID Cliente' },
+    { key: 'plate_number', label: 'Matrícula' },
+    { key: 'brand', label: 'Marca' },
+    { key: 'model', label: 'Modelo' },
+    { key: 'VIN', label: 'VIN' },
+    { key: 'motor_type', label: 'Tipo de Motor' },
+    { key: 'added_at', label: 'Fecha de Alta' },
+    { key: 'created_at', label: 'Fecha de Creación' }
+];
 </script>
 
 <template>
-    <div class="vehicles" v-for="vehicle in vehicles" :key="vehicle.id">
-        <span>name: {{ vehicle.client_id }}, plate: {{ vehicle.plate_number }}</span>
+    <Head title="Vehículos" />
+
+    <div class="container mx-auto py-8 px-4">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">
+            Vehículos
+        </h1>
+
+        <DataTable 
+            :data="vehicles"
+            :columns="columns"
+            :items-per-page="10"
+        />
     </div>
 </template>
