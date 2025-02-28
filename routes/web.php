@@ -11,12 +11,7 @@ use App\Http\Controllers\RepairController;
 use App\Http\Controllers\DeliveryNoteController;
 
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+    return redirect('/login');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
