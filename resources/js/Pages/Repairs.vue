@@ -11,12 +11,13 @@ const props = defineProps({
 
 const columns = [
     { key: 'id', label: 'ID' },
-    { key: 'repair_type_id', label: 'Tipo de Reparación' },
-    { key: 'vehicle_id', label: 'ID Vehículo' },
+    { key: 'vehicle.client.name', label: 'Cliente' },
+    { key: 'vehicle.brand', label: 'Marca' },
+    { key: 'vehicle.plate_number', label: 'Matrícula' },
+    { key: 'repair_type.name', label: 'Tipo de Reparación' },
     { key: 'observations', label: 'Observaciones' },
     { key: 'status', label: 'Estado' },
-    { key: 'started_at', label: 'Fecha de Inicio' },
-    { key: 'created_at', label: 'Fecha de Creación' }
+    { key: 'started_at', label: 'Fecha de Inicio' }
 ];
 </script>
 

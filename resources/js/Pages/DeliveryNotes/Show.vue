@@ -18,8 +18,7 @@ const columns = [
     { key: 'cost', label: 'Coste' },
     { key: 'margin', label: 'Margen' },
     { key: 'profit', label: 'Beneficio' },
-    { key: 'added_at', label: 'Fecha de Alta' },
-    { key: 'created_at', label: 'Fecha de Creación' }
+    { key: 'added_at', label: 'Fecha de Alta' }
 ];
 </script>
 

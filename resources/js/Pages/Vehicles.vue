@@ -11,14 +11,13 @@ const props = defineProps({
 
 const columns = [
     { key: 'id', label: 'ID' },
-    { key: 'client_id', label: 'ID Cliente' },
+    { key: 'client.name', label: 'Cliente' },
     { key: 'plate_number', label: 'Matrícula' },
     { key: 'brand', label: 'Marca' },
     { key: 'model', label: 'Modelo' },
     { key: 'VIN', label: 'VIN' },
     { key: 'motor_type', label: 'Tipo de Motor' },
-    { key: 'added_at', label: 'Fecha de Alta' },
-    { key: 'created_at', label: 'Fecha de Creación' }
+    { key: 'added_at', label: 'Fecha de Alta' }
 ];
 </script>
 

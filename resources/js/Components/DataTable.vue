@@ -24,6 +24,12 @@ const totalPages = computed(() => Math.ceil(totalItems.value / props.itemsPerPag
 const startIndex = computed(() => (currentPage.value - 1) * props.itemsPerPage);
 const endIndex = computed(() => Math.min(startIndex.value + props.itemsPerPage, totalItems.value));
 
+const getNestedValue = (obj, path) => {
+  return path.split('.').reduce((current, key) => 
+    current ? current[key] : undefined, obj
+  );
+};
+
 const paginatedData = computed(() => {
   return props.data.slice(startIndex.value, endIndex.value);
 });
@@ -98,7 +104,7 @@ watch(() => props.data, () => {
           <td v-for="column in columns" 
               :key="column.key"
               class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-            {{ item[column.key] }}
+            {{ getNestedValue(item, column.key) }}
           </td>
         </tr>
       </tbody>

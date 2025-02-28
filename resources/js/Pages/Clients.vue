@@ -11,14 +11,13 @@ const props = defineProps({
 
 const columns = [
     { key: 'id', label: 'ID' },
+    { key: 'DNI', label: 'DNI' },
     { key: 'name', label: 'Nombre' },
     { key: 'email', label: 'Email' },
     { key: 'telephone', label: 'Teléfono' },
     { key: 'city', label: 'Ciudad' },
     { key: 'postal_code', label: 'Código Postal' },
-    { key: 'DNI', label: 'DNI' },
-    { key: 'registered_at', label: 'Fecha de Registro' },
-    { key: 'created_at', label: 'Fecha de Creación' }
+    { key: 'registered_at', label: 'Fecha de Registro' }
 ];
 </script>
 

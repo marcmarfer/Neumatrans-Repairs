@@ -9,7 +9,7 @@ class Vehicle extends Model
 {
     use HasFactory;
 
-    public function clients()
+    public function client()
     {
         return $this->belongsTo(Client::class);
     }

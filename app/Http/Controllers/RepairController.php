@@ -9,7 +9,7 @@ class RepairController extends Controller
     public function index()
     {
         return Inertia::render('Repairs', [
-            'repairs' => Repair::all()
+            'repairs' => Repair::with(['repairType', 'vehicle.client'])->get()
         ]);
     }
 }
