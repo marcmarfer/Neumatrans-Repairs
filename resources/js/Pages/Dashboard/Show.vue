@@ -31,10 +31,10 @@ const logout = () => {
                 <Tile title="Clientes" description="Gestión de clientes" @click="navigateToClients" />
                 <Tile title="Vehículos" description="Gestión de vehículos" @click="navigateToVehicles" />
                 <Tile title="Reparaciones" description="Gestión de reparaciones" @click="navigateToRepairs" />
-                <Tile title="Compras" description="Gestión de compras" @click="navigateToDeliveryNotes" />
-                <Tile title="Compras" description="Gestión de reparaciones" @click="navigateToDeliveryNotes" />
-                <Tile title="Compras" description="Gestión de compras" @click="navigateToDeliveryNotes" />
-                <Tile title="Compras" description="Gestión de compras" @click="navigateToDeliveryNotes" />
+                <Tile title="Albaranes" description="Gestión de albaranes" @click="navigateToDeliveryNotes" />
+                <Tile title="Albaranes" description="Gestión de albaranes" @click="navigateToDeliveryNotes" />
+                <Tile title="Albaranes" description="Gestión de albaranes" @click="navigateToDeliveryNotes" />
+                <Tile title="Albaranes" description="Gestión de albaranes" @click="navigateToDeliveryNotes" />
                 <Tile title="Cerrar Sesión" description="Cerrar sesión de la cuenta" @click="logout" />
             </div>
         </div>
