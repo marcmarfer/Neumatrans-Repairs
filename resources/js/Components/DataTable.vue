@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 
 const props = defineProps({
   data: {
@@ -18,11 +18,11 @@ const props = defineProps({
 
 const currentPage = ref(1);
 
-const totalItems = computed(() => props.data.length);
-const totalPages = computed(() => Math.ceil(totalItems.value / props.itemsPerPage));
+const getTotalItems = () => props.data.length;
+const getTotalPages = () => Math.ceil(getTotalItems() / props.itemsPerPage);
 
-const startIndex = computed(() => (currentPage.value - 1) * props.itemsPerPage);
-const endIndex = computed(() => Math.min(startIndex.value + props.itemsPerPage, totalItems.value));
+const getStartIndex = () => (currentPage.value - 1) * props.itemsPerPage;
+const getEndIndex = () => Math.min(getStartIndex() + props.itemsPerPage, getTotalItems());
 
 const getNestedValue = (obj, path) => {
   return path.split('.').reduce((current, key) => 
@@ -30,18 +30,18 @@ const getNestedValue = (obj, path) => {
   );
 };
 
-const paginatedData = computed(() => {
-  return props.data.slice(startIndex.value, endIndex.value);
-});
+const getPaginatedData = () => {
+  return props.data.slice(getStartIndex(), getEndIndex());
+};
 
-const displayedPages = computed(() => {
+const getDisplayedPages = () => {
   const delta = 2;
   const range = [];
   const rangeWithDots = [];
   let l;
 
-  for (let i = 1; i <= totalPages.value; i++) {
-    if (i === 1 || i === totalPages.value || 
+  for (let i = 1; i <= getTotalPages(); i++) {
+    if (i === 1 || i === getTotalPages() || 
         (i >= currentPage.value - delta && i <= currentPage.value + delta)) {
       range.push(i);
     }
@@ -60,7 +60,7 @@ const displayedPages = computed(() => {
   });
 
   return rangeWithDots;
-});
+};
 
 const previousPage = () => {
   if (currentPage.value > 1) {
@@ -69,7 +69,7 @@ const previousPage = () => {
 };
 
 const nextPage = () => {
-  if (currentPage.value < totalPages.value) {
+  if (currentPage.value < getTotalPages()) {
     currentPage.value++;
   }
 };
@@ -98,7 +98,7 @@ watch(() => props.data, () => {
         </tr>
       </thead>
       <tbody class="bg-white">
-        <tr v-for="item in paginatedData" 
+        <tr v-for="item in getPaginatedData()" 
             :key="item.id"
             class="hover:bg-gray-50 border-b border-gray-200">
           <td v-for="column in columns" 
@@ -120,9 +120,9 @@ watch(() => props.data, () => {
           Anterior
         </button>
         <button @click="nextPage"
-                :disabled="currentPage >= totalPages"
+                :disabled="currentPage >= getTotalPages()"
                 class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                :class="{ 'opacity-50 cursor-not-allowed': currentPage >= totalPages }">
+                :class="{ 'opacity-50 cursor-not-allowed': currentPage >= getTotalPages() }">
           Siguiente
         </button>
       </div>
@@ -130,11 +130,11 @@ watch(() => props.data, () => {
         <div>
           <p class="text-sm text-gray-700">
             Mostrando
-            <span class="font-medium">{{ startIndex + 1 }}</span>
+            <span class="font-medium">{{ getStartIndex() + 1 }}</span>
             a
-            <span class="font-medium">{{ endIndex }}</span>
+            <span class="font-medium">{{ getEndIndex() }}</span>
             de
-            <span class="font-medium">{{ totalItems }}</span>
+            <span class="font-medium">{{ getTotalItems() }}</span>
             resultados
           </p>
         </div>
@@ -149,7 +149,7 @@ watch(() => props.data, () => {
                 <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
               </svg>
             </button>
-            <button v-for="page in displayedPages"
+            <button v-for="page in getDisplayedPages()"
                     :key="page"
                     @click="goToPage(page)"
                     :class="[
@@ -161,9 +161,9 @@ watch(() => props.data, () => {
               {{ page }}
             </button>
             <button @click="nextPage"
-                    :disabled="currentPage >= totalPages"
+                    :disabled="currentPage >= getTotalPages()"
                     class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                    :class="{ 'opacity-50 cursor-not-allowed': currentPage >= totalPages }">
+                    :class="{ 'opacity-50 cursor-not-allowed': currentPage >= getTotalPages() }">
               <span class="sr-only">Siguiente</span>
               <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
