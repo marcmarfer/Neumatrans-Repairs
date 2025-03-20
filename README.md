@@ -27,11 +27,15 @@ This application is specifically developed for **Neumatrans**, ensuring it meets
    ```sh
    npm install
    ```
-4. Start the development server:
+4. Install backend dependencies:
+   ```sh
+   composer install
+   ```
+5. Start the development server:
    ```sh
    npm run dev
    ```
-5. Run the backend server:
+6. Run the backend server:
    ```sh
    php artisan serve
    ```
@@ -44,7 +48,7 @@ This application is specifically developed for **Neumatrans**, ensuring it meets
 
 A demo version is available for testing the system. To access the demo:
 
-1. Visit: [Demo URL] *(https://neumatrans.marcmarques.com)*
+1. Visit: [Demo URL] *(https://demo.neumatrans.marcmarques.com)*
 
 This allows users to explore the dashboard features without affecting real company data.
 
