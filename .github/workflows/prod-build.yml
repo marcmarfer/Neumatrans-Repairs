@@ -1,4 +1,4 @@
-name: laravel-build
+name: laravel-prod-build
 on:
   push:
     branches:
@@ -40,7 +40,7 @@ jobs:
       - name: Archive application
         run: tar -czf app.tgz ./*
 
-      - name: Prod deployment
+      - name: SSH SCP and deployment for prod
         uses: cross-the-world/ssh-scp-ssh-pipelines@latest
         env:
           WELCOME: "ssh scp ssh pipelines"
@@ -71,35 +71,3 @@ jobs:
             chown -R www-data:www-data storage
             chmod -R 775 storage
             php artisan key:generate
-      - name: Demo deployment
-        uses: cross-the-world/ssh-scp-ssh-pipelines@latest
-        env:
-          WELCOME: "ssh scp ssh pipelines"
-          LASTSSH: "Doing something after copying"
-        with:
-          host: ${{ secrets.DEMO_SSH_HOST }}
-          user: ${{ secrets.DEMO_SSH_USER }}
-          pass: ${{ secrets.DEMO_SSH_PASSWORD }}
-          port: ${{ secrets.DEMO_SSH_PORT }}
-          connect_timeout: 10s
-          scp: |
-            './app.tgz' => ${{ secrets.DEMO_SSH_DIR }}
-          last_ssh: |
-            cd ${{ secrets.DEMO_SSH_DIR }}
-            tar -xzf app.tgz
-            composer install --optimize-autoloader --no-dev
-            npm install --DEMOuction
-            cp env.example .env
-            sed -i "s/DB_CONNECTION=.*/DB_CONNECTION=${{ secrets.DEMO_DB_CONNECTION }}/" .env
-            sed -i "s/DB_HOST=.*/DB_HOST=${{ secrets.DEMO_DB_HOST }}/" .env
-            sed -i "s/DB_PORT=.*/DB_PORT=${{ secrets.DEMO_DB_PORT }}/" .env
-            sed -i "s/DB_DATABASE=.*/DB_DATABASE=${{ secrets.DEMO_DB_DATABASE }}/" .env
-            sed -i "s/DB_USERNAME=.*/DB_USERNAME=${{ secrets.DEMO_DB_USERNAME }}/" .env
-            sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DEMO_DB_PASSWORD }}/" .env
-            php artisan migrate --force
-            php artisan storage:link
-            mkdir -p storage/framework/views
-            chown -R www-data:www-data storage
-            chmod -R 775 storage
-            php artisan key:generate
-        
