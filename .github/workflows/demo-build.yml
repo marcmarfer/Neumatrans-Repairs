@@ -66,6 +66,7 @@ jobs:
             sed -i "s/DB_USERNAME=.*/DB_USERNAME=${{ secrets.DEMO_DB_USERNAME }}/" .env
             sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DEMO_DB_PASSWORD }}/" .env
             php artisan migrate --force
+            php artisan db:seed --force
             php artisan storage:link
             mkdir -p storage/framework/views
             chown -R www-data:www-data storage
