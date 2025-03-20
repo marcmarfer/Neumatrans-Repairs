@@ -37,11 +37,10 @@ jobs:
           rm -rf storage/app/public/certifications
           rm -rf storage/app/public/logos
           mkdir -p storage/app/private/orders/
-      
       - name: Archive application
         run: tar -czf app.tgz ./*
 
-      - name: Deploy to Production
+      - name: SSH SCP and deployment
         uses: cross-the-world/ssh-scp-ssh-pipelines@latest
         env:
           WELCOME: "ssh scp ssh pipelines"
@@ -66,44 +65,8 @@ jobs:
             sed -i "s/DB_DATABASE=.*/DB_DATABASE=${{ secrets.PROD_DB_DATABASE }}/" .env
             sed -i "s/DB_USERNAME=.*/DB_USERNAME=${{ secrets.PROD_DB_USERNAME }}/" .env
             sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}/" .env
-            mysql -u ${{ secrets.PROD_DB_USERNAME }} -p${{ secrets.PROD_DB_PASSWORD }} -e "CREATE DATABASE IF NOT EXISTS ${{ secrets.PROD_DB_DATABASE }};"
             php artisan migrate --force
             php artisan storage:link
             mkdir -p storage/framework/views
             chown -R www-data:www-data storage
             chmod -R 775 storage
-            php artisan key:generate
-
-      - name: Deploy to Demo
-        uses: cross-the-world/ssh-scp-ssh-pipelines@latest
-        env:
-          WELCOME: "ssh scp ssh pipelines"
-          LASTSSH: "Doing something after copying"
-        with:
-          host: ${{ secrets.DEMO_SSH_HOST }}
-          user: ${{ secrets.DEMO_SSH_USER }}
-          pass: ${{ secrets.DEMO_SSH_PASSWORD }}
-          port: ${{ secrets.DEMO_SSH_PORT }}
-          connect_timeout: 10s
-          scp: |
-            './app.tgz' => ${{ secrets.DEMO_SSH_DIR }}
-          last_ssh: |
-            cd ${{ secrets.DEMO_SSH_DIR }}
-            tar -xzf app.tgz
-            composer install --optimize-autoloader --no-dev
-            npm install --production
-            cp env.example .env
-            sed -i "s/DB_CONNECTION=.*/DB_CONNECTION=${{ secrets.DEMO_DB_CONNECTION }}/" .env
-            sed -i "s/DB_HOST=.*/DB_HOST=${{ secrets.DEMO_DB_HOST }}/" .env
-            sed -i "s/DB_PORT=.*/DB_PORT=${{ secrets.DEMO_DB_PORT }}/" .env
-            sed -i "s/DB_DATABASE=.*/DB_DATABASE=${{ secrets.DEMO_DB_DATABASE }}/" .env
-            sed -i "s/DB_USERNAME=.*/DB_USERNAME=${{ secrets.DEMO_DB_USERNAME }}/" .env
-            sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DEMO_DB_PASSWORD }}/" .env
-            mysql -u ${{ secrets.DEMO_DB_USERNAME }} -p${{ secrets.DEMO_DB_PASSWORD }} -e "DROP DATABASE IF EXISTS ${{ secrets.DEMO_DB_DATABASE }}; CREATE DATABASE ${{ secrets.DEMO_DB_DATABASE }};"
-            php artisan migrate --force
-            php artisan db:seed --force
-            php artisan storage:link
-            mkdir -p storage/framework/views
-            chown -R www-data:www-data storage
-            chmod -R 775 storage
-            php artisan key:generate
