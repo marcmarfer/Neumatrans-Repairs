@@ -59,6 +59,8 @@ jobs:
             composer install --optimize-autoloader --no-dev
             npm install --production
             cp env.example .env
+            sed -i "s/APP_ENV=.*/APP_ENV=${{ secrets.PROD_APP_ENV }}/" .env
+            sed -i "s/VITE_APP_ENV=.*/VITE_APP_ENV=${{ secrets.PROD_VITE_APP_ENV }}/" .env
             sed -i "s/DB_CONNECTION=.*/DB_CONNECTION=${{ secrets.PROD_DB_CONNECTION }}/" .env
             sed -i "s/DB_HOST=.*/DB_HOST=${{ secrets.PROD_DB_HOST }}/" .env
             sed -i "s/DB_PORT=.*/DB_PORT=${{ secrets.PROD_DB_PORT }}/" .env
