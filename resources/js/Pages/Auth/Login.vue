@@ -21,8 +21,6 @@ const submit = () => {
         onFinish: () => form.reset('password'),
     });
 };
-
-const isDemo = import.meta.env.VITE_APP_ENV === 'demo';
 </script>
 
 <template>
@@ -74,7 +72,7 @@ const isDemo = import.meta.env.VITE_APP_ENV === 'demo';
                     {{ form.processing ? 'Iniciando sesión...' : 'Iniciar Sesión' }}
                 </button>
 
-                <div class="text-center mt-4" v-if="isDemo">
+                <div class="text-center mt-4" v-if="$page.props.viteAppEnv === 'demo'">
                     <Link :href="route('register')" class="text-sm text-gray-600 hover:text-red-600">
                     ¿No tienes cuenta? Regístrate
                     </Link>

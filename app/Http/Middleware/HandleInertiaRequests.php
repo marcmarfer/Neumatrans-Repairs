@@ -34,6 +34,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'viteAppEnv' => env('VITE_APP_ENV'),
         ];
     }
 }
