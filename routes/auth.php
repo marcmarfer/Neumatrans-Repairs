@@ -11,13 +11,16 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Middleware\IsDemoMiddleware;
+
 Route::middleware('guest')->group(function () {
-    if(!app()->environment('prod')) {
-    Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('register');
+
+    Route::middleware(IsDemoMiddleware::class)->group(function () {
+        Route::get('register', [RegisteredUserController::class, 'create'])
+            ->name('register');
 
         Route::post('register', [RegisteredUserController::class, 'store']);
-    }
+    });
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');

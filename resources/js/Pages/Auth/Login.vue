@@ -22,7 +22,7 @@ const submit = () => {
     });
 };
 
-const isProduction = import.meta.env.VITE_APP_ENV === 'prod';
+const isDemo = import.meta.env.VITE_APP_ENV === 'demo';
 </script>
 
 <template>
@@ -74,7 +74,7 @@ const isProduction = import.meta.env.VITE_APP_ENV === 'prod';
                     {{ form.processing ? 'Iniciando sesión...' : 'Iniciar Sesión' }}
                 </button>
 
-                <div class="text-center mt-4" v-if="!isProduction">
+                <div class="text-center mt-4" v-if="isDemo">
                     <Link :href="route('register')" class="text-sm text-gray-600 hover:text-red-600">
                     ¿No tienes cuenta? Regístrate
                     </Link>
