@@ -10,9 +10,10 @@ use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\RepairController;
 use App\Http\Controllers\DeliveryNoteController;
 
-Route::get('/', function () {
-    return redirect('/login');
-});
+// Eliminamos la ruta '/' duplicada
+// Route::get('/', function () {
+//     return redirect('/login');
+// });
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [UserController::class, 'show'])->name('dashboard.show');
