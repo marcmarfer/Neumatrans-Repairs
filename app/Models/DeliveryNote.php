@@ -8,4 +8,15 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class DeliveryNote extends Model
 {
     use HasFactory;
+
+    protected $fillable = [
+        'type',
+        'supplier',
+        'family',
+        'RRP',
+        'cost',
+        'margin',
+        'profit',
+        'added_at'
+    ];
 }

@@ -1,5 +1,6 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import DefaultInput from '@/Components/DefaultInput.vue';
 
 const form = useForm({
     name: '',
@@ -26,35 +27,40 @@ const submit = () => {
             </div>
 
             <form @submit.prevent="submit" class="space-y-6">
-                <div>
-                    <input id="name" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                        v-model="form.name" placeholder="Nombre" required autofocus />
-                    <div v-if="form.errors.name" class="mt-2 text-sm text-red-600">
-                        {{ form.errors.name }}
-                    </div>
-                </div>
+                <DefaultInput
+                    id="name"
+                    type="text"
+                    v-model="form.name"
+                    placeholder="Nombre"
+                    required
+                    :error="form.errors.name"
+                />
 
-                <div>
-                    <input id="email" type="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                        v-model="form.email" placeholder="Email" required />
-                    <div v-if="form.errors.email" class="mt-2 text-sm text-red-600">
-                        {{ form.errors.email }}
-                    </div>
-                </div>
+                <DefaultInput
+                    id="email"
+                    type="email"
+                    v-model="form.email"
+                    placeholder="Email"
+                    required
+                    :error="form.errors.email"
+                />
 
-                <div>
-                    <input id="password" type="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                        v-model="form.password" placeholder="Contraseña" required />
-                    <div v-if="form.errors.password" class="mt-2 text-sm text-red-600">
-                        {{ form.errors.password }}
-                    </div>
-                </div>
+                <DefaultInput
+                    id="password"
+                    type="password"
+                    v-model="form.password"
+                    placeholder="Contraseña"
+                    required
+                    :error="form.errors.password"
+                />
 
-                <div>
-                    <input id="password_confirmation" type="password"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg" v-model="form.password_confirmation"
-                        placeholder="Confirmar Contraseña" required />
-                </div>
+                <DefaultInput
+                    id="password_confirmation"
+                    type="password"
+                    v-model="form.password_confirmation"
+                    placeholder="Confirmar Contraseña"
+                    required
+                />
 
                 <button type="submit"
                     class="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"

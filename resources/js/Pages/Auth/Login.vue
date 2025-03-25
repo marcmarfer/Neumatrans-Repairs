@@ -1,5 +1,6 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import DefaultInput from '@/Components/DefaultInput.vue';
 
 defineProps({
     canResetPassword: {
@@ -38,21 +39,23 @@ const submit = () => {
             </div>
 
             <form @submit.prevent="submit" class="space-y-6">
-                <div>
-                    <input id="email" type="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                        v-model="form.email" placeholder="Email" required autofocus />
-                    <div v-if="form.errors.email" class="mt-2 text-sm text-red-600">
-                        {{ form.errors.email }}
-                    </div>
-                </div>
+                <DefaultInput
+                    id="email"
+                    type="email"
+                    v-model="form.email"
+                    placeholder="Email"
+                    required
+                    :error="form.errors.email"
+                />
 
-                <div>
-                    <input id="password" type="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                        v-model="form.password" placeholder="Contraseña" required />
-                    <div v-if="form.errors.password" class="mt-2 text-sm text-red-600">
-                        {{ form.errors.password }}
-                    </div>
-                </div>
+                <DefaultInput
+                    id="password"
+                    type="password"
+                    v-model="form.password"
+                    placeholder="Contraseña"
+                    required
+                    :error="form.errors.password"
+                />
 
                 <div class="flex items-center justify-between">
                     <label class="flex items-center">

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\DeliveryNote;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Redirect;
 
 class DeliveryNoteController extends Controller
 {
@@ -14,7 +15,7 @@ class DeliveryNoteController extends Controller
     public function index()
     {
         $deliveryNotes = DeliveryNote::all();
-        return Inertia::render('DeliveryNotes/Show', [
+        return Inertia::render('DeliveryNotes/Index', [
             'delivery_notes' => $deliveryNotes
         ]);
     }
@@ -32,7 +33,28 @@ class DeliveryNoteController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'type' => 'required|in:generic,corrective',
+            'supplier' => 'required|string|max:255',
+            'family' => 'required|string|max:255',
+            'RRP' => 'required|numeric|min:0',
+            'cost' => 'required|numeric|min:0',
+            'margin' => 'required|numeric',
+            'profit' => 'required|numeric',
+        ]);
+
+        $deliveryNote = new DeliveryNote();
+        $deliveryNote->type = $request->type;
+        $deliveryNote->supplier = $request->supplier;
+        $deliveryNote->family = $request->family;
+        $deliveryNote->RRP = $request->RRP;
+        $deliveryNote->cost = $request->cost;
+        $deliveryNote->margin = $request->margin;
+        $deliveryNote->profit = $request->profit;
+        $deliveryNote->added_at = now();
+        $deliveryNote->save();
+
+        return Redirect::route('delivery_notes.index');
     }
 
     /**

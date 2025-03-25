@@ -9,6 +9,14 @@ class Repair extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'repair_type_id',
+        'vehicle_id',
+        'observations',
+        'status',
+        'started_at'
+    ];
+
     public function vehicle()
     {
         return $this->belongsTo(Vehicle::class);
