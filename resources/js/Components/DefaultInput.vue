@@ -72,7 +72,7 @@ function getInputClasses() {
       :required="required"
       :rows="rows"
       :readonly="readonly"
-      :class="getInputClasses"
+      :class="getInputClasses()"
     ></textarea>
 
     <input
@@ -84,7 +84,7 @@ function getInputClasses() {
       :placeholder="placeholder"
       :required="required"
       :readonly="readonly"
-      :class="getInputClasses"
+      :class="getInputClasses()"
     />
 
     <div v-if="error" class="text-red-500 text-sm mt-1">{{ error }}</div>

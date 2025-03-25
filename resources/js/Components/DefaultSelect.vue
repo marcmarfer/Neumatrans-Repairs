@@ -63,7 +63,7 @@ function selectClasses() {
       :value="modelValue"
       @input="updateValue"
       :required="required"
-      :class="selectClasses"
+      :class="selectClasses()"
     >
       <option value="" disabled>{{ placeholder }}</option>
       <option
