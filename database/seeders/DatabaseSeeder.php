@@ -48,10 +48,6 @@ class DatabaseSeeder extends Seeder
 
         DeliveryNote::factory(10)->create([
             'added_at' => Carbon::now()->toDateString(),
-            'RRP' => 100.00,
-            'cost' => 60.00,
-            'margin' => 40.00,
-            'profit' => 40.00,
         ]);
     }
 }

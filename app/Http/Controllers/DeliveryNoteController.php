@@ -37,6 +37,8 @@ class DeliveryNoteController extends Controller
             'type' => 'required|in:generic,corrective',
             'supplier' => 'required|string|max:255',
             'family' => 'required|string|max:255',
+            'quantity' => 'required|integer|min:1',
+            'unitary_price' => 'required|numeric|min:0',
             'RRP' => 'required|numeric|min:0',
             'cost' => 'required|numeric|min:0',
             'margin' => 'required|numeric',
@@ -47,6 +49,8 @@ class DeliveryNoteController extends Controller
         $deliveryNote->type = $request->type;
         $deliveryNote->supplier = $request->supplier;
         $deliveryNote->family = $request->family;
+        $deliveryNote->quantity = $request->quantity;
+        $deliveryNote->unitary_price = $request->unitary_price;
         $deliveryNote->RRP = $request->RRP;
         $deliveryNote->cost = $request->cost;
         $deliveryNote->margin = $request->margin;

@@ -20,6 +20,8 @@ const columns = [
   { key: "type", label: "Tipo" },
   { key: "supplier", label: "Proveedor" },
   { key: "family", label: "Familia" },
+  { key: "quantity", label: "Cantidad" },
+  { key: "unitary_price", label: "Precio Unitario" },
   { key: "RRP", label: "PVP" },
   { key: "cost", label: "Coste" },
   { key: "margin", label: "Margen" },
@@ -38,17 +40,32 @@ const form = useForm({
   type: "generic",
   supplier: "",
   family: "",
+  quantity: 1,
+  unitary_price: 0,
   RRP: 0,
   cost: 0,
   margin: 0,
   profit: 0,
 });
 
-// Watch for changes in RRP and cost to auto-calculate margin and profit
-watch([() => form.RRP, () => form.cost], ([newRRP, newCost]) => {
-  if (newRRP > 0 && newCost > 0) {
-    form.profit = parseFloat(newRRP) - parseFloat(newCost);
-    form.margin = (form.profit / parseFloat(newRRP)) * 100;
+watch([() => form.quantity, () => form.unitary_price], ([newQuantity, newUnitaryPrice]) => {
+  if (newQuantity > 0 && newUnitaryPrice > 0) {
+    form.RRP = parseFloat(newQuantity) * parseFloat(newUnitaryPrice);
+    if (form.cost > 0) {
+      form.profit = form.RRP - parseFloat(form.cost);
+      form.margin = (form.profit / form.RRP) * 100;
+    }
+  } else {
+    form.RRP = 0;
+    form.profit = 0;
+    form.margin = 0;
+  }
+});
+
+watch(() => form.cost, (newCost) => {
+  if (form.RRP > 0 && newCost > 0) {
+    form.profit = form.RRP - parseFloat(newCost);
+    form.margin = (form.profit / form.RRP) * 100;
   } else {
     form.profit = 0;
     form.margin = 0;
@@ -229,12 +246,28 @@ function submitForm() {
             />
 
             <DefaultInput
-              id="RRP"
-              v-model="form.RRP"
+              id="quantity"
+              v-model="form.quantity"
               type="number"
-              label="PVP (€)"
+              label="Cantidad"
               required
-              :error="form.errors.RRP"
+              :error="form.errors.quantity"
+            />
+
+            <DefaultInput
+              id="unitary_price"
+              v-model="form.unitary_price"
+              type="number"
+              label="Precio Unitario (€)"
+              required
+              :error="form.errors.unitary_price"
+            />
+
+            <DefaultInput
+              id="RRP"
+              :modelValue="form.RRP.toFixed(2)"
+              label="PVP (€) [Auto-calculado]"
+              readonly
             />
 
             <DefaultInput

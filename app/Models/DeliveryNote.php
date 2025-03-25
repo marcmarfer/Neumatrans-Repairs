@@ -13,6 +13,8 @@ class DeliveryNote extends Model
         'type',
         'supplier',
         'family',
+        'quantity',
+        'unitary_price',
         'RRP',
         'cost',
         'margin',

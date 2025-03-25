@@ -16,6 +16,8 @@ return new class extends Migration
             $table->enum('type', ['generic', 'corrective']);
             $table->string('supplier');
             $table->string('family');
+            $table->integer('quantity')->default(1);
+            $table->decimal('unitary_price', 10, 2);
             $table->decimal('RRP', 10, 2);
             $table->decimal('cost', 10, 2);
             $table->decimal('margin', 10, 2);
