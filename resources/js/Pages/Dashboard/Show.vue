@@ -11,7 +11,7 @@ const navigateToClients = () => router.get('/clients');
 const navigateToVehicles = () => router.get('/vehicles');
 const navigateToRepairs = () => router.get('/repairs');
 const navigateToDeliveryNotes = () => router.get('/delivery-notes');
-
+const navigateToInsights = () => router.get('/insights');
 const logout = () => {
     router.post(route('logout'));
 };
@@ -32,9 +32,7 @@ const logout = () => {
                 <Tile title="Vehículos" description="Gestión de vehículos" @click="navigateToVehicles" />
                 <Tile title="Reparaciones" description="Gestión de reparaciones" @click="navigateToRepairs" />
                 <Tile title="Albaranes" description="Gestión de albaranes" @click="navigateToDeliveryNotes" />
-                <Tile title="Albaranes" description="Gestión de albaranes" @click="navigateToDeliveryNotes" />
-                <Tile title="Albaranes" description="Gestión de albaranes" @click="navigateToDeliveryNotes" />
-                <Tile title="Albaranes" description="Gestión de albaranes" @click="navigateToDeliveryNotes" />
+                <Tile title="Estadísticas" description="Panel de estadísticas" @click="navigateToInsights" />
                 <Tile title="Cerrar Sesión" description="Cerrar sesión de la cuenta" @click="logout" />
             </div>
         </div>
