@@ -60,7 +60,7 @@ class DatabaseSeeder extends Seeder
                 'repair_type_id' => $repairType->id,
                 'vehicle_id' => $vehicle->id,
                 'observations' => fake()->paragraph(),
-                'step' => $randomStep->id,
+                'step_id' => $randomStep->id,
                 'started_at' => Carbon::now()->subDays(rand(0, 30))->toDateString()
             ]);
         }
