@@ -59,8 +59,8 @@ class DatabaseSeeder extends Seeder
             Repair::create([
                 'repair_type_id' => $repairType->id,
                 'vehicle_id' => $vehicle->id,
-                'observations' => fake()->paragraph(),
                 'step_id' => $randomStep->id,
+                'observations' => fake()->paragraph(),
                 'started_at' => Carbon::now()->subDays(rand(0, 30))->toDateString()
             ]);
         }
