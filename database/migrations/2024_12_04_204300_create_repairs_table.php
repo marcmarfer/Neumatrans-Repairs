@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('repair_type_id')->constrained('repair_types')->onDelete('cascade');
             $table->foreignId('vehicle_id')->constrained('vehicles')->onDelete('cascade');
             $table->text('observations')->nullable();
-            $table->enum('status', ['pending', 'in_progress', 'completed'])->default('pending');
+            $table->foreignId('step_id')->constrained('repair_type_steps')->onDelete('cascade')->comment('The current step ID this repair is at');
             $table->date('started_at');
             $table->timestamps();
         });

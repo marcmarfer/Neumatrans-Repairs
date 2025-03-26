@@ -1,6 +1,6 @@
 <script setup>
 import { Head, router, useForm } from "@inertiajs/vue3";
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import DataTable from "@/Components/DataTable.vue";
 import DateRangeSearch from "@/Components/DateRangeSearch.vue";
 import DarkButton from "@/Components/DarkButton.vue";
@@ -29,8 +29,8 @@ const columns = [
   { key: "vehicle.brand", label: "Marca" },
   { key: "vehicle.plate_number", label: "Matrícula" },
   { key: "repair_type.name", label: "Tipo de Reparación" },
+  { key: "current_step.step_name", label: "Paso Actual" },
   { key: "observations", label: "Observaciones" },
-  { key: "status", label: "Estado" },
   { key: "started_at", label: "Fecha de Inicio" },
 ];
 
@@ -40,6 +40,7 @@ const dateRange = ref({
   endDate: "",
 });
 const isModalOpen = ref(false);
+const typeSteps = ref([]);
 
 const today = new Date().toISOString().split('T')[0];
 
@@ -47,8 +48,26 @@ const form = useForm({
   vehicle_id: "",
   repair_type_id: "",
   observations: "",
-  status: "pending",
+  step: "",
   started_at: today,
+});
+
+watch(() => form.repair_type_id, (newTypeId) => {
+  if (newTypeId) {
+    const selectedType = props.repair_types.find(type => type.id.toString() === newTypeId);
+    if (selectedType && selectedType.repair_type_step) {
+      typeSteps.value = selectedType.repair_type_step;
+      if (typeSteps.value.length > 0) {
+        form.step = typeSteps.value[0].id.toString();
+      }
+    } else {
+      typeSteps.value = [];
+      form.step = "";
+    }
+  } else {
+    typeSteps.value = [];
+    form.step = "";
+  }
 });
 
 function filterRepairs() {
@@ -187,6 +206,19 @@ function submitForm() {
               :error="form.errors.repair_type_id"
             />
 
+            <DefaultSelect
+              id="step"
+              v-model="form.step"
+              label="Paso Actual"
+              :options="typeSteps"
+              value-field="id"
+              label-field="step_name"
+              placeholder="Seleccione el paso actual"
+              required
+              :error="form.errors.step"
+              :disabled="!form.repair_type_id || typeSteps.length === 0"
+            />
+
             <DefaultInput
               id="observations"
               v-model="form.observations"
@@ -194,19 +226,6 @@ function submitForm() {
               :error="form.errors.observations"
               isTextarea
               :rows="3"
-            />
-
-            <DefaultSelect
-              id="status"
-              v-model="form.status"
-              label="Estado"
-              :options="[
-                { value: 'pending', label: 'Pendiente' },
-                { value: 'in_progress', label: 'En Progreso' },
-                { value: 'completed', label: 'Completada' },
-              ]"
-              required
-              :error="form.errors.status"
             />
 
             <DefaultInput
