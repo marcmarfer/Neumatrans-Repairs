@@ -26,6 +26,7 @@ class VehicleController extends Controller
             'model' => 'required|string|max:255',
             'VIN' => 'nullable|string|unique:vehicles,VIN',
             'motor_type' => 'nullable|string|max:100',
+            'added_at' => 'required|date',
         ]);
 
         $vehicle = new Vehicle();
@@ -35,7 +36,7 @@ class VehicleController extends Controller
         $vehicle->model = $request->model;
         $vehicle->VIN = $request->VIN;
         $vehicle->motor_type = $request->motor_type;
-        $vehicle->added_at = now();
+        $vehicle->added_at = $request->added_at;
         $vehicle->save();
 
         return Redirect::route('vehicles.index');

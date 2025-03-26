@@ -26,6 +26,7 @@ class ClientController extends Controller
             'telephone' => 'required|string|max:15',
             'city' => 'nullable|string|max:100',
             'postal_code' => 'nullable|string|max:10',
+            'registered_at' => 'required|date',
         ]);
 
         $client = new Client();
@@ -35,7 +36,7 @@ class ClientController extends Controller
         $client->telephone = $request->telephone;
         $client->city = $request->city;
         $client->postal_code = $request->postal_code;
-        $client->registered_at = now();
+        $client->registered_at = $request->registered_at;
         $client->save();
 
         return Redirect::route('clients.index');

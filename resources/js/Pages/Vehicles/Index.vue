@@ -37,6 +37,8 @@ const dateRange = ref({
 });
 const isModalOpen = ref(false);
 
+const today = new Date().toISOString().split('T')[0];
+
 const form = useForm({
   client_id: "",
   plate_number: "",
@@ -44,6 +46,7 @@ const form = useForm({
   model: "",
   VIN: "",
   motor_type: "",
+  added_at: today,
 });
 
 function filterVehicles() {
@@ -204,6 +207,14 @@ function submitForm() {
               v-model="form.motor_type"
               label="Tipo de Motor"
               :error="form.errors.motor_type"
+            />
+
+            <DefaultInput
+              id="added_at"
+              v-model="form.added_at"
+              type="date"
+              label="Fecha de Alta"
+              :error="form.errors.added_at"
             />
           </div>
 

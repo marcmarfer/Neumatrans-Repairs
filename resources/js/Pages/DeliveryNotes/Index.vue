@@ -36,6 +36,8 @@ const dateRange = ref({
 });
 const isModalOpen = ref(false);
 
+const today = new Date().toISOString().split('T')[0];
+
 const form = useForm({
   type: "generic",
   supplier: "",
@@ -46,6 +48,7 @@ const form = useForm({
   cost: 0,
   margin: 0,
   profit: 0,
+  added_at: today,
 });
 
 watch([() => form.quantity, () => form.unitary_price], ([newQuantity, newUnitaryPrice]) => {
@@ -194,7 +197,7 @@ function submitForm() {
     <div v-if="isModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="closeModal"></div>
 
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 overflow-y-auto max-h-[90vh]">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">Añadir Nuevo Albarán</h2>
           <button @click="closeModal" class="text-gray-500 hover:text-gray-700">
@@ -291,6 +294,14 @@ function submitForm() {
               :modelValue="form.margin.toFixed(2)"
               label="Margen (%) [Auto-calculado]"
               readonly
+            />
+
+            <DefaultInput
+              id="added_at"
+              v-model="form.added_at"
+              type="date"
+              label="Fecha de Alta"
+              :error="form.errors.added_at"
             />
           </div>
 

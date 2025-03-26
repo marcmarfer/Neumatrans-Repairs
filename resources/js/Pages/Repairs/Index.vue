@@ -41,11 +41,14 @@ const dateRange = ref({
 });
 const isModalOpen = ref(false);
 
+const today = new Date().toISOString().split('T')[0];
+
 const form = useForm({
   vehicle_id: "",
   repair_type_id: "",
   observations: "",
   status: "pending",
+  started_at: today,
 });
 
 function filterRepairs() {
@@ -204,6 +207,14 @@ function submitForm() {
               ]"
               required
               :error="form.errors.status"
+            />
+
+            <DefaultInput
+              id="started_at"
+              v-model="form.started_at"
+              type="date"
+              label="Fecha de Inicio"
+              :error="form.errors.started_at"
             />
           </div>
 

@@ -33,6 +33,8 @@ const dateRange = ref({
 const searchQuery = ref("");
 const isModalOpen = ref(false);
 
+const today = new Date().toISOString().split('T')[0];
+
 const form = useForm({
   DNI: "",
   name: "",
@@ -40,6 +42,7 @@ const form = useForm({
   telephone: "",
   city: "",
   postal_code: "",
+  registered_at: today,
 });
 
 function filterClients() {
@@ -194,6 +197,14 @@ function submitForm() {
               v-model="form.postal_code"
               label="Código Postal"
               :error="form.errors.postal_code"
+            />
+
+            <DefaultInput
+              id="registered_at"
+              v-model="form.registered_at"
+              type="date"
+              label="Fecha de Registro"
+              :error="form.errors.registered_at"
             />
           </div>
 

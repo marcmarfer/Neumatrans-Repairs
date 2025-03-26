@@ -26,6 +26,7 @@ class RepairController extends Controller
             'repair_type_id' => 'required|exists:repair_types,id',
             'observations' => 'nullable|string',
             'status' => 'required|in:pending,in_progress,completed',
+            'started_at' => 'required|date',
         ]);
 
         $repair = new Repair();
@@ -33,7 +34,7 @@ class RepairController extends Controller
         $repair->repair_type_id = $request->repair_type_id;
         $repair->observations = $request->observations;
         $repair->status = $request->status;
-        $repair->started_at = now();
+        $repair->started_at = $request->started_at;
         $repair->save();
 
         return Redirect::route('repairs.index');

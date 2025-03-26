@@ -43,6 +43,7 @@ class DeliveryNoteController extends Controller
             'cost' => 'required|numeric|min:0',
             'margin' => 'required|numeric',
             'profit' => 'required|numeric',
+            'added_at' => 'required|date',
         ]);
 
         $deliveryNote = new DeliveryNote();
@@ -55,7 +56,7 @@ class DeliveryNoteController extends Controller
         $deliveryNote->cost = $request->cost;
         $deliveryNote->margin = $request->margin;
         $deliveryNote->profit = $request->profit;
-        $deliveryNote->added_at = now();
+        $deliveryNote->added_at = $request->added_at;
         $deliveryNote->save();
 
         return Redirect::route('delivery_notes.index');
