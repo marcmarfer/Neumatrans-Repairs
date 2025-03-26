@@ -12,11 +12,20 @@ return new class extends Migration
      */
     public function up(): void
     {
+        $hasStepId = Schema::hasColumn('repairs', 'step_id');
+        $hasStep = Schema::hasColumn('repairs', 'step');
+        
         DB::statement('SET FOREIGN_KEY_CHECKS=0');
         
-        Schema::table('repairs', function (Blueprint $table) {
-            $table->dropColumn('step_id');
-        });
+        if ($hasStepId) {
+            Schema::table('repairs', function (Blueprint $table) {
+                $table->dropColumn('step_id');
+            });
+        } elseif ($hasStep) {
+            Schema::table('repairs', function (Blueprint $table) {
+                $table->dropColumn('step');
+            });
+        }
         
         Schema::table('repairs', function (Blueprint $table) {
             $table->foreignId('step_id')->after('observations')->constrained('repair_type_steps')->onDelete('cascade');
@@ -32,10 +41,12 @@ return new class extends Migration
     {
         DB::statement('SET FOREIGN_KEY_CHECKS=0');
         
-        Schema::table('repairs', function (Blueprint $table) {
-            $table->dropForeign(['step_id']);
-            $table->dropColumn('step_id');
-        });
+        if (Schema::hasColumn('repairs', 'step_id')) {
+            Schema::table('repairs', function (Blueprint $table) {
+                $table->dropForeign(['step_id']);
+                $table->dropColumn('step_id');
+            });
+        }
         
         Schema::table('repairs', function (Blueprint $table) {
             $table->enum('step_id', ['pending', 'in_progress', 'completed'])->default('pending')->after('observations');
