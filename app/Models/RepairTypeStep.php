@@ -22,6 +22,6 @@ class RepairTypeStep extends Model
 
     public function repairs()
     {
-        return $this->hasMany(Repair::class, 'step');
+        return $this->hasMany(Repair::class, 'step_id');
     }
 }

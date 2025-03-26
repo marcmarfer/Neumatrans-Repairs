@@ -22,7 +22,7 @@ class RepairFactory extends Factory
             'repair_type_id' => $repairType->id,
             'vehicle_id' => Vehicle::inRandomOrder()->value('id') ?? Vehicle::factory(),
             'observations' => $this->faker->paragraph,
-            'step' => $step->id,
+            'step_id' => $step->id,
             'started_at' => $this->faker->date(),
         ];
     }

@@ -30,7 +30,7 @@ class RepairController extends Controller
             'vehicle_id' => 'required|exists:vehicles,id',
             'repair_type_id' => 'required|exists:repair_types,id',
             'observations' => 'nullable|string',
-            'step' => 'required|exists:repair_type_steps,id',
+            'step_id' => 'required|exists:repair_type_steps,id',
             'started_at' => 'required|date',
         ]);
 
@@ -38,7 +38,7 @@ class RepairController extends Controller
         $repair->vehicle_id = $request->vehicle_id;
         $repair->repair_type_id = $request->repair_type_id;
         $repair->observations = $request->observations;
-        $repair->step = $request->step;
+        $repair->step_id = $request->step_id;
         $repair->started_at = $request->started_at;
         $repair->save();
 

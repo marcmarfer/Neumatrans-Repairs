@@ -13,7 +13,7 @@ class Repair extends Model
         'repair_type_id',
         'vehicle_id',
         'observations',
-        'step',
+        'step_id',
         'started_at'
     ];
 
@@ -29,6 +29,6 @@ class Repair extends Model
 
     public function currentStep()
     {
-        return $this->belongsTo(RepairTypeStep::class, 'step');
+        return $this->belongsTo(RepairTypeStep::class, 'step_id');
     }
 }

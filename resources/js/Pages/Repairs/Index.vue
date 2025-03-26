@@ -48,7 +48,7 @@ const form = useForm({
   vehicle_id: "",
   repair_type_id: "",
   observations: "",
-  step: "",
+  step_id: "",
   started_at: today,
 });
 
@@ -58,15 +58,15 @@ watch(() => form.repair_type_id, (newTypeId) => {
     if (selectedType && selectedType.repair_type_step) {
       typeSteps.value = selectedType.repair_type_step;
       if (typeSteps.value.length > 0) {
-        form.step = typeSteps.value[0].id.toString();
+        form.step_id = typeSteps.value[0].id.toString();
       }
     } else {
       typeSteps.value = [];
-      form.step = "";
+      form.step_id = "";
     }
   } else {
     typeSteps.value = [];
-    form.step = "";
+    form.step_id = "";
   }
 });
 
@@ -207,15 +207,15 @@ function submitForm() {
             />
 
             <DefaultSelect
-              id="step"
-              v-model="form.step"
+              id="step_id"
+              v-model="form.step_id"
               label="Paso Actual"
               :options="typeSteps"
               value-field="id"
               label-field="step_name"
               placeholder="Seleccione el paso actual"
               required
-              :error="form.errors.step"
+              :error="form.errors.step_id"
               :disabled="!form.repair_type_id || typeSteps.length === 0"
             />
 
