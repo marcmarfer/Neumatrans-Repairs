@@ -160,7 +160,7 @@ function submitForm() {
           placeholder="Buscar por familia o proveedor..."
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
-        <DarkButton @click="addNewDeliveryNote"> Añadir Albarán </DarkButton>
+        <DarkButton @click="addNewDeliveryNote"> Añadir Referencia </DarkButton>
       </div>
 
       <DateRangeSearch
@@ -201,7 +201,7 @@ function submitForm() {
 
       <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 overflow-y-auto max-h-[90vh]">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-bold">Añadir Nuevo Albarán</h2>
+          <h2 class="text-xl font-bold">Añadir Nueva Referencia</h2>
           <button @click="closeModal" class="text-gray-500 hover:text-gray-700">
             <svg
               xmlns="http://www.w3.org/2000/svg"
