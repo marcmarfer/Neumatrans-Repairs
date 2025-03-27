@@ -6,7 +6,7 @@ import DateRangeSearch from "@/Components/DateRangeSearch.vue";
 import DarkButton from "@/Components/DarkButton.vue";
 import LightButton from "@/Components/LightButton.vue";
 import DefaultInput from "@/Components/DefaultInput.vue";
-
+import GoBackButton from "@/Components/GoBackButton.vue";
 const props = defineProps({
   clients: {
     type: Array,
@@ -33,7 +33,7 @@ const dateRange = ref({
 const searchQuery = ref("");
 const isModalOpen = ref(false);
 
-const today = new Date().toISOString().split('T')[0];
+const today = new Date().toISOString().split("T")[0];
 
 const form = useForm({
   DNI: "",
@@ -102,7 +102,9 @@ function submitForm() {
 
 <template>
   <Head title="Clientes" />
-
+  <GoBackButton type="button" @click="router.visit(route('dashboard.show'))">
+    Volver
+  </GoBackButton>
   <div class="container mx-auto py-8 px-4">
     <h1 class="text-2xl font-bold text-gray-800 mb-6">Clientes</h1>
 

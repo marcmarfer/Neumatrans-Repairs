@@ -7,6 +7,7 @@ import DarkButton from "@/Components/DarkButton.vue";
 import LightButton from "@/Components/LightButton.vue";
 import DefaultInput from "@/Components/DefaultInput.vue";
 import DefaultSelect from "@/Components/DefaultSelect.vue";
+import GoBackButton from "@/Components/GoBackButton.vue";
 
 const props = defineProps({
   vehicles: {
@@ -106,7 +107,9 @@ function submitForm() {
 
 <template>
   <Head title="Vehículos" />
-
+  <GoBackButton type="button" @click="router.visit(route('dashboard.show'))">
+    Volver
+  </GoBackButton>
   <div class="container mx-auto py-8 px-4">
     <h1 class="text-2xl font-bold text-gray-800 mb-6">Vehículos</h1>
 
