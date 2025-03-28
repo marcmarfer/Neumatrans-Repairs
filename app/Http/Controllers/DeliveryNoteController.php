@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\DeliveryNote;
+use App\Models\Supplier;
+use App\Models\Family;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Redirect;
 
@@ -14,9 +16,14 @@ class DeliveryNoteController extends Controller
      */
     public function index()
     {
-        $deliveryNotes = DeliveryNote::all();
+        $delivery_notes = DeliveryNote::all();
+        $suppliers = Supplier::all();
+        $families = Family::all();
+        
         return Inertia::render('DeliveryNotes/Index', [
-            'delivery_notes' => $deliveryNotes
+            'delivery_notes' => $delivery_notes,
+            'suppliers' => $suppliers,
+            'families' => $families,
         ]);
     }
 

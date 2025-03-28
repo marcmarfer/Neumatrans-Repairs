@@ -9,6 +9,8 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\RepairController;
 use App\Http\Controllers\DeliveryNoteController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\FamilyController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [UserController::class, 'show'])->name('dashboard.show');
@@ -29,5 +31,8 @@ Route::post('/repairs', [RepairController::class, 'store'])->name('repairs.store
 
 Route::get('/delivery-notes', [DeliveryNoteController::class, 'index'])->name('delivery_notes.index');
 Route::post('/delivery-notes', [DeliveryNoteController::class, 'store'])->name('delivery_notes.store');
+
+Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
+Route::post('/families', [FamilyController::class, 'store'])->name('families.store');
 
 require __DIR__.'/auth.php';

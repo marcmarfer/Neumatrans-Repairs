@@ -13,6 +13,14 @@ const props = defineProps({
     type: Array,
     required: true,
   },
+  suppliers: {
+    type: Array,
+    required: true,
+  },
+  families: {
+    type: Array,
+    required: true,
+  },
 });
 
 const columns = [
@@ -35,6 +43,14 @@ const dateRange = ref({
   endDate: "",
 });
 const isModalOpen = ref(false);
+const isNewSupplierModalOpen = ref(false);
+const isNewFamilyModalOpen = ref(false);
+const newSupplierForm = useForm({
+  name: '',
+});
+const newFamilyForm = useForm({
+  name: '',
+});
 
 const today = new Date().toISOString().split('T')[0];
 
@@ -89,8 +105,19 @@ function calculateTotals() {
   };
 }
 
+function formatType(type) {
+  if (type === 'corrective') return 'Correctivo';
+  if (type === 'generic') return 'Genérico';
+  return type;
+}
+
 function filterDeliveryNotes() {
-  let filteredNotes = props.delivery_notes;
+  let filteredNotes = [...props.delivery_notes];
+
+  filteredNotes = filteredNotes.map(note => ({
+    ...note,
+    type: formatType(note.type)
+  }));
 
   // Filter by date range
   if (dateRange.value.startDate || dateRange.value.endDate) {
@@ -135,10 +162,46 @@ function closeModal() {
   form.reset();
 }
 
+function openNewSupplierModal() {
+  isNewSupplierModalOpen.value = true;
+}
+
+function closeNewSupplierModal() {
+  isNewSupplierModalOpen.value = false;
+  newSupplierForm.reset();
+}
+
+function submitNewSupplierForm() {
+  newSupplierForm.post(route("suppliers.store"), {
+    onSuccess: () => {
+      closeNewSupplierModal();
+      router.reload();
+    },
+  });
+}
+
 function submitForm() {
   form.post(route("delivery_notes.store"), {
     onSuccess: () => {
       closeModal();
+    },
+  });
+}
+
+function openNewFamilyModal() {
+  isNewFamilyModalOpen.value = true;
+}
+
+function closeNewFamilyModal() {
+  isNewFamilyModalOpen.value = false;
+  newFamilyForm.reset();
+}
+
+function submitNewFamilyForm() {
+  newFamilyForm.post(route("families.store"), {
+    onSuccess: () => {
+      closeNewFamilyModal();
+      router.reload();
     },
   });
 }
@@ -234,21 +297,61 @@ function submitForm() {
               ]"
             />
 
-            <DefaultInput
-              id="supplier"
-              v-model="form.supplier"
-              label="Proveedor"
-              required
-              :error="form.errors.supplier"
-            />
+            <div>
+              <label for="supplier" class="block text-sm font-medium text-gray-700 mb-1">Proveedor</label>
+              <div class="flex space-x-2">
+                <select
+                  id="supplier"
+                  v-model="form.supplier"
+                  class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                  required
+                >
+                  <option value="" disabled>Selecciona un proveedor</option>
+                  <option v-for="supplier in suppliers" :key="supplier.id" :value="supplier.name">
+                    {{ supplier.name }}
+                  </option>
+                </select>
+                <button 
+                  type="button" 
+                  @click="openNewSupplierModal"
+                  class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Nuevo
+                </button>
+              </div>
+              <div v-if="form.errors.supplier" class="text-sm text-red-600 mt-1">{{ form.errors.supplier }}</div>
+            </div>
 
-            <DefaultInput
-              id="family"
-              v-model="form.family"
-              label="Familia"
-              required
-              :error="form.errors.family"
-            />
+            <div>
+              <label for="family" class="block text-sm font-medium text-gray-700 mb-1">Familia</label>
+              <div class="flex space-x-2">
+                <select
+                  id="family"
+                  v-model="form.family"
+                  class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                  required
+                >
+                  <option value="" disabled>Selecciona una familia</option>
+                  <option v-for="family in families" :key="family.id" :value="family.name">
+                    {{ family.name }}
+                  </option>
+                </select>
+                <button 
+                  type="button" 
+                  @click="openNewFamilyModal"
+                  class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Nueva
+                </button>
+              </div>
+              <div v-if="form.errors.family" class="text-sm text-red-600 mt-1">{{ form.errors.family }}</div>
+            </div>
 
             <DefaultInput
               id="quantity"
@@ -310,6 +413,92 @@ function submitForm() {
           <div class="mt-6 flex justify-end space-x-3">
             <LightButton type="button" @click="closeModal"> Cancelar </LightButton>
             <DarkButton type="submit" :disabled="form.processing"> Guardar </DarkButton>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div v-if="isNewSupplierModalOpen" class="fixed inset-0 flex items-center justify-center z-[60]">
+      <div class="fixed inset-0 bg-black opacity-50" @click="closeNewSupplierModal"></div>
+
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold">Añadir Nuevo Proveedor</h2>
+          <button @click="closeNewSupplierModal" class="text-gray-500 hover:text-gray-700">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <form @submit.prevent="submitNewSupplierForm">
+          <div class="space-y-4">
+            <DefaultInput
+              id="supplier_name"
+              v-model="newSupplierForm.name"
+              label="Nombre del Proveedor"
+              required
+              :error="newSupplierForm.errors.name"
+            />
+          </div>
+
+          <div class="mt-6 flex justify-end space-x-3">
+            <LightButton type="button" @click="closeNewSupplierModal">Cancelar</LightButton>
+            <DarkButton type="submit" :disabled="newSupplierForm.processing">Guardar</DarkButton>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div v-if="isNewFamilyModalOpen" class="fixed inset-0 flex items-center justify-center z-[60]">
+      <div class="fixed inset-0 bg-black opacity-50" @click="closeNewFamilyModal"></div>
+
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold">Añadir Nueva Familia</h2>
+          <button @click="closeNewFamilyModal" class="text-gray-500 hover:text-gray-700">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <form @submit.prevent="submitNewFamilyForm">
+          <div class="space-y-4">
+            <DefaultInput
+              id="family_name"
+              v-model="newFamilyForm.name"
+              label="Nombre de la Familia"
+              required
+              :error="newFamilyForm.errors.name"
+            />
+          </div>
+
+          <div class="mt-6 flex justify-end space-x-3">
+            <LightButton type="button" @click="closeNewFamilyModal">Cancelar</LightButton>
+            <DarkButton type="submit" :disabled="newFamilyForm.processing">Guardar</DarkButton>
           </div>
         </form>
       </div>
