@@ -80,7 +80,6 @@ jobs:
             php artisan migrate --force
             php artisan db:seed --force
             php artisan storage:link
-            php artisan gemini:install
             php artisan key:generate
 
             php artisan config:cache
