@@ -68,6 +68,7 @@ jobs:
             sed -i "s/DB_DATABASE=.*/DB_DATABASE=${{ secrets.DEMO_DB_DATABASE }}/" .env
             sed -i "s/DB_USERNAME=.*/DB_USERNAME=${{ secrets.DEMO_DB_USERNAME }}/" .env
             sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${{ secrets.DEMO_DB_PASSWORD }}/" .env
+            sed -i "s/GEMINI_API_KEY=.*/GEMINI_API_KEY=${{ secrets.DEMO_GEMINI_API_KEY }}/" .env
             php artisan migrate --force
             php artisan db:seed --force
             php artisan storage:link
