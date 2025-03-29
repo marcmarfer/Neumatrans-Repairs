@@ -56,8 +56,7 @@ jobs:
           last_ssh: |
             cd ${{ secrets.DEMO_SSH_DIR }}
             tar -xzf app.tgz
-            composer install --optimize-autoloader --no-dev
-            composer require google-gemini-php/laravel
+            COMPOSER_ALLOW_SUPERUSER=1 composer install --optimize-autoloader --no-dev
             npm install --production
             cp env.example .env
             sed -i "s/APP_ENV=.*/APP_ENV=${{ secrets.DEMO_APP_ENV }}/" .env
