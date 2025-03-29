@@ -9,7 +9,8 @@ defineProps({
 <template>
     <div class="group shadow-xl rounded-xl h-40 cursor-pointer transition-all duration-300 ease-in-out hover:-translate-y-1" @click="emit('click')">
     <div 
-        class="relative flex flex-col justify-center items-start rounded-xl overflow-hidden text-white p-6 bg-gradient-to-br from-red-500 to-red-600 shadow-2xl h-full w-full" 
+        class="relative flex flex-col justify-center items-start rounded-xl overflow-hidden text-white p-6 shadow-2xl h-full w-full"
+        style="background: linear-gradient(135deg, #ef4444, #dc2626, #b91c1c, #991b1b, #b91c1c);"
     >
         <div class="relative z-10 w-full">
             <h3 class="text-lg sm:text-xl font-bold mb-1">{{ title }}</h3>

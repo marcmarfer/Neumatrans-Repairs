@@ -1,6 +1,7 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
 import Tile from '@/Components/Tile.vue';
+import MulticolorTile from '@/Components/MulticolorTile.vue';
 
 const props = defineProps({
     user: Object,
@@ -32,7 +33,7 @@ const logout = () => {
                 <Tile title="Vehículos" description="Gestión de vehículos" @click="navigateToVehicles" />
                 <Tile title="Reparaciones" description="Gestión de reparaciones" @click="navigateToRepairs" />
                 <Tile title="Albaranes" description="Gestión de albaranes" @click="navigateToDeliveryNotes" />
-                <Tile title="Estadísticas" description="Panel de estadísticas" @click="navigateToInsights" />
+                <MulticolorTile title="Estadísticas" description="Estadísticas con IA integrada" @click="navigateToInsights" />
                 <Tile title="Cerrar Sesión" description="Cerrar sesión de la cuenta" @click="logout" />
             </div>
         </div>
