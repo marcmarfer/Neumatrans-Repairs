@@ -11,6 +11,7 @@ use App\Http\Controllers\RepairController;
 use App\Http\Controllers\DeliveryNoteController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\FamilyController;
+use App\Http\Controllers\InsightsController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [UserController::class, 'show'])->name('dashboard.show');
@@ -34,5 +35,8 @@ Route::post('/delivery-notes', [DeliveryNoteController::class, 'store'])->name('
 
 Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
 Route::post('/families', [FamilyController::class, 'store'])->name('families.store');
+
+Route::get('/insights', [InsightsController::class, 'index'])->name('insights.index');
+Route::post('/insights/query', [InsightsController::class, 'getQueryResults'])->name('insights.query');
 
 require __DIR__.'/auth.php';
