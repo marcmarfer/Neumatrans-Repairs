@@ -57,6 +57,7 @@ jobs:
             cd ${{ secrets.DEMO_SSH_DIR }}
             tar -xzf app.tgz
             composer install --optimize-autoloader --no-dev
+            composer require google-gemini-php/laravel
             npm install --production
             cp env.example .env
             sed -i "s/APP_ENV=.*/APP_ENV=${{ secrets.DEMO_APP_ENV }}/" .env
@@ -70,6 +71,7 @@ jobs:
             php artisan migrate --force
             php artisan db:seed --force
             php artisan storage:link
+            php artisan gemini:install
             mkdir -p storage/framework/views
             chown -R www-data:www-data storage
             chmod -R 775 storage
