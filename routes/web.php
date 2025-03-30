@@ -12,6 +12,7 @@ use App\Http\Controllers\DeliveryNoteController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\InsightsController;
+use App\Http\Middleware\ProductionMiddleware;
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [UserController::class, 'show'])->name('dashboard.show');
@@ -37,6 +38,10 @@ Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers
 Route::post('/families', [FamilyController::class, 'store'])->name('families.store');
 
 Route::get('/insights', [InsightsController::class, 'index'])->name('insights.index');
-Route::post('/insights/query', [InsightsController::class, 'getQueryResults'])->name('insights.query');
+
+Route::middleware(ProductionMiddleware::class)->group(function () {
+    Route::post('/insights/query-openai', [InsightsController::class, 'getQueryResultsOpenAI'])->name('insights.query.openai');
+});
+Route::post('/insights/query-gemini', [InsightsController::class, 'getQueryResultsGeminiFlash'])->name('insights.query.gemini');
 
 require __DIR__.'/auth.php';
