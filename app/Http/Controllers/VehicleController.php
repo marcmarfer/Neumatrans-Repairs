@@ -41,4 +41,14 @@ class VehicleController extends Controller
 
         return Redirect::route('vehicles.index');
     }
+
+    public function destroy(Vehicle $vehicle)
+    {
+        try {
+            $vehicle->delete();
+            return Redirect::route('vehicles.index');
+        } catch (\Exception $e) {
+            return Redirect::route('vehicles.index')->with('error', 'No se pudo eliminar el vehículo. Puede tener reparaciones asociadas.');
+        }
+    }
 }

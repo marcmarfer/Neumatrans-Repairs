@@ -44,4 +44,14 @@ class RepairController extends Controller
 
         return Redirect::route('repairs.index');
     }
+
+    public function destroy(Repair $repair)
+    {
+        try {
+            $repair->delete();
+            return Redirect::route('repairs.index');
+        } catch (\Exception $e) {
+            return Redirect::route('repairs.index')->with('error', 'No se pudo eliminar la reparación.');
+        }
+    }
 }

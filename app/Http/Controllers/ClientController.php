@@ -41,4 +41,14 @@ class ClientController extends Controller
 
         return Redirect::route('clients.index');
     }
+
+    public function destroy(Client $client)
+    {
+        try {
+            $client->delete();
+            return Redirect::route('clients.index');
+        } catch (\Exception $e) {
+            return Redirect::route('clients.index')->with('error', 'No se pudo eliminar el cliente. Puede tener vehículos asociados.');
+        }
+    }
 }

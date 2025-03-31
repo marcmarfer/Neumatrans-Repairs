@@ -96,8 +96,13 @@ class DeliveryNoteController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(DeliveryNote $deliveryNote)
     {
-        //
+        try {
+            $deliveryNote->delete();
+            return Redirect::route('delivery_notes.index');
+        } catch (\Exception $e) {
+            return Redirect::route('delivery_notes.index')->with('error', 'No se pudo eliminar el albarán.');
+        }
     }
 }

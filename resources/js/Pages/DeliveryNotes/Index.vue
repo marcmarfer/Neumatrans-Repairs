@@ -8,6 +8,8 @@ import LightButton from "@/Components/LightButton.vue";
 import DefaultInput from "@/Components/DefaultInput.vue";
 import DefaultSelect from "@/Components/DefaultSelect.vue";
 import GoBackButton from "@/Components/GoBackButton.vue";
+import DeleteButton from "@/Components/DeleteButton.vue";
+
 const props = defineProps({
   delivery_notes: {
     type: Array,
@@ -45,6 +47,8 @@ const dateRange = ref({
 const isModalOpen = ref(false);
 const isNewSupplierModalOpen = ref(false);
 const isNewFamilyModalOpen = ref(false);
+const isDeleteModalOpen = ref(false);
+const deliveryNoteToDelete = ref(null);
 const newSupplierForm = useForm({
   name: '',
 });
@@ -205,6 +209,27 @@ function submitNewFamilyForm() {
     },
   });
 }
+
+function confirmDelete(deliveryNote) {
+  deliveryNoteToDelete.value = deliveryNote;
+  isDeleteModalOpen.value = true;
+}
+
+function cancelDelete() {
+  isDeleteModalOpen.value = false;
+  deliveryNoteToDelete.value = null;
+}
+
+function deleteDeliveryNote() {
+  if (deliveryNoteToDelete.value) {
+    router.delete(route("delivery_notes.destroy", deliveryNoteToDelete.value.id), {
+      onSuccess: () => {
+        isDeleteModalOpen.value = false;
+        deliveryNoteToDelete.value = null;
+      },
+    });
+  }
+}
 </script>
 
 <template>
@@ -257,7 +282,12 @@ function submitNewFamilyForm() {
       </div>
     </div>
 
-    <DataTable :data="filterDeliveryNotes()" :columns="columns" :items-per-page="10" />
+    <DataTable 
+      :data="filterDeliveryNotes()" 
+      :columns="columns" 
+      :items-per-page="10"
+      @delete="confirmDelete" 
+    />
 
     <div v-if="isModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="closeModal"></div>
@@ -501,6 +531,42 @@ function submitNewFamilyForm() {
             <DarkButton type="submit" :disabled="newFamilyForm.processing">Guardar</DarkButton>
           </div>
         </form>
+      </div>
+    </div>
+
+    <div v-if="isDeleteModalOpen" class="fixed inset-0 flex items-center justify-center z-[60]">
+      <div class="fixed inset-0 bg-black opacity-50" @click="cancelDelete"></div>
+
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold">Confirmar eliminación</h2>
+          <button @click="cancelDelete" class="text-gray-500 hover:text-gray-700">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <div class="mb-6">
+          <p class="text-gray-700">¿Estás seguro que deseas eliminar el albarán de <span class="font-bold">{{ deliveryNoteToDelete?.family }}</span>?</p>
+          <p class="text-sm text-red-500 mt-2">Esta acción no se puede deshacer.</p>
+        </div>
+
+        <div class="flex justify-end space-x-3">
+          <LightButton type="button" @click="cancelDelete">Cancelar</LightButton>
+          <DeleteButton type="button" @click="deleteDeliveryNote">Eliminar</DeleteButton>
+        </div>
       </div>
     </div>
   </div>

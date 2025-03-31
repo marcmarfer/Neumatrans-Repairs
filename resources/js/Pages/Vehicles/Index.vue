@@ -8,7 +8,7 @@ import LightButton from "@/Components/LightButton.vue";
 import DefaultInput from "@/Components/DefaultInput.vue";
 import DefaultSelect from "@/Components/DefaultSelect.vue";
 import GoBackButton from "@/Components/GoBackButton.vue";
-
+import DeleteButton from "@/Components/DeleteButton.vue";
 const props = defineProps({
   vehicles: {
     type: Array,
@@ -37,6 +37,8 @@ const dateRange = ref({
   endDate: "",
 });
 const isModalOpen = ref(false);
+const isDeleteModalOpen = ref(false);
+const vehicleToDelete = ref(null);
 
 const today = new Date().toISOString().split('T')[0];
 
@@ -103,6 +105,27 @@ function submitForm() {
     },
   });
 }
+
+function confirmDelete(vehicle) {
+  vehicleToDelete.value = vehicle;
+  isDeleteModalOpen.value = true;
+}
+
+function cancelDelete() {
+  isDeleteModalOpen.value = false;
+  vehicleToDelete.value = null;
+}
+
+function deleteVehicle() {
+  if (vehicleToDelete.value) {
+    router.delete(route("vehicles.destroy", vehicleToDelete.value.id), {
+      onSuccess: () => {
+        isDeleteModalOpen.value = false;
+        vehicleToDelete.value = null;
+      },
+    });
+  }
+}
 </script>
 
 <template>
@@ -131,7 +154,12 @@ function submitForm() {
       />
     </div>
 
-    <DataTable :data="filterVehicles()" :columns="columns" :items-per-page="10" />
+    <DataTable 
+      :data="filterVehicles()" 
+      :columns="columns" 
+      :items-per-page="10" 
+      @delete="confirmDelete"
+    />
 
     <div v-if="isModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="closeModal"></div>
@@ -228,6 +256,43 @@ function submitForm() {
             </DarkButton>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Modal de confirmación de eliminación -->
+    <div v-if="isDeleteModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
+      <div class="fixed inset-0 bg-black opacity-50" @click="cancelDelete"></div>
+
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold">Confirmar eliminación</h2>
+          <button @click="cancelDelete" class="text-gray-500 hover:text-gray-700">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <div class="mb-6">
+          <p class="text-gray-700">¿Estás seguro que deseas eliminar el vehículo <span class="font-bold">{{ vehicleToDelete?.plate_number }}</span>?</p>
+          <p class="text-sm text-red-500 mt-2">Esta acción no se puede deshacer.</p>
+        </div>
+
+        <div class="flex justify-end space-x-3">
+          <LightButton type="button" @click="cancelDelete">Cancelar</LightButton>
+          <DeleteButton type="button" @click="deleteDeliveryNote">Eliminar</DeleteButton>
+        </div>
       </div>
     </div>
   </div>

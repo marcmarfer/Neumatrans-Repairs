@@ -16,6 +16,8 @@ const props = defineProps({
   }
 });
 
+const emit = defineEmits(['delete']);
+
 const currentPage = ref(1);
 
 const getTotalItems = () => props.data.length;
@@ -80,6 +82,10 @@ const goToPage = (page) => {
   }
 };
 
+const handleDelete = (item) => {
+  emit('delete', item);
+};
+
 watch(() => props.data, () => {
   currentPage.value = 1;
 });
@@ -95,6 +101,9 @@ watch(() => props.data, () => {
               class="px-6 py-3 text-left text-xs text-white font-medium text-gray-700 uppercase tracking-wider border-b border-gray-200">
             {{ column.label }}
           </th>
+          <th class="px-6 py-3 text-left text-xs text-white font-medium text-gray-700 uppercase tracking-wider border-b border-gray-200">
+            Acciones
+          </th>
         </tr>
       </thead>
       <tbody class="bg-white">
@@ -105,6 +114,15 @@ watch(() => props.data, () => {
               :key="column.key"
               class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
             {{ getNestedValue(item, column.key) }}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <button 
+              @click="handleDelete(item)" 
+              class="inline-flex items-center p-1.5 border border-red-500 text-xs font-medium rounded text-red-500 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              title="Eliminar"
+            >
+              <img src="/trash_can.svg" width="20" height="20" class="text-red-500" alt="Eliminar" />
+            </button>
           </td>
         </tr>
       </tbody>
