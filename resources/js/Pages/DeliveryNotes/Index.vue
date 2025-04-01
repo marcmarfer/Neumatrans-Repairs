@@ -25,6 +25,14 @@ const props = defineProps({
   },
 });
 
+function getSortedSuppliers() {
+  return [...props.suppliers].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function getSortedFamilies() {
+  return [...props.families].sort((a, b) => a.name.localeCompare(b.name));
+}
+
 const columns = [
   { key: "id", label: "ID" },
   { key: "type", label: "Tipo" },
@@ -179,7 +187,7 @@ function submitNewSupplierForm() {
   newSupplierForm.post(route("suppliers.store"), {
     onSuccess: () => {
       closeNewSupplierModal();
-      router.reload();
+      router.reload({ only: ['suppliers'] });
     },
   });
 }
@@ -205,7 +213,7 @@ function submitNewFamilyForm() {
   newFamilyForm.post(route("families.store"), {
     onSuccess: () => {
       closeNewFamilyModal();
-      router.reload();
+      router.reload({ only: ['families'] });
     },
   });
 }
@@ -337,7 +345,7 @@ function deleteDeliveryNote() {
                   required
                 >
                   <option value="" disabled>Selecciona un proveedor</option>
-                  <option v-for="supplier in suppliers" :key="supplier.id" :value="supplier.name">
+                  <option v-for="supplier in getSortedSuppliers()" :key="supplier.id" :value="supplier.name">
                     {{ supplier.name }}
                   </option>
                 </select>
@@ -365,7 +373,7 @@ function deleteDeliveryNote() {
                   required
                 >
                   <option value="" disabled>Selecciona una familia</option>
-                  <option v-for="family in families" :key="family.id" :value="family.name">
+                  <option v-for="family in getSortedFamilies()" :key="family.id" :value="family.name">
                     {{ family.name }}
                   </option>
                 </select>
