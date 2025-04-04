@@ -53,6 +53,10 @@ jobs:
           rm -rf storage/app/public/logos
           mkdir -p storage/app/private/orders/
 
+      - name: Remove Laravel cache files before packaging
+        run: |
+          rm -f bootstrap/cache/*.php
+
       - name: Archive application
         run: tar -czf app.tgz ./*
 
@@ -76,11 +80,11 @@ jobs:
             cd ${{ secrets.DEMO_SSH_DIR }}
             tar -xzf app.tgz
 
+            COMPOSER_ALLOW_SUPERUSER=1 composer install --optimize-autoloader --no-dev
+
             php artisan config:clear
             php artisan view:clear
             php artisan cache:clear
-
-            COMPOSER_ALLOW_SUPERUSER=1 composer install --optimize-autoloader --no-dev
 
             php artisan migrate --force
             php artisan db:seed --force
