@@ -123,4 +123,14 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Vite Environment
+    |--------------------------------------------------------------------------
+    |
+    | This value is used to determine the environment for Vite.
+    |
+    */
+
+    'vite_env' => env('VITE_APP_ENV', 'local'),
 ];
