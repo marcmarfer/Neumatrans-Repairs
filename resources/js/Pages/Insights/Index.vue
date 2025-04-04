@@ -58,7 +58,6 @@ function copyToClipboard(text) {
       console.error('Error al copiar: ', err);
     });
 }
-console.log('✅ VITE_APP_ENV:', import.meta.env.VITE_APP_ENV)
 </script>
 
 <template>

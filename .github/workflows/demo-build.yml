@@ -76,6 +76,10 @@ jobs:
             cd ${{ secrets.DEMO_SSH_DIR }}
             tar -xzf app.tgz
 
+            php artisan config:clear
+            php artisan view:clear
+            php artisan cache:clear
+
             COMPOSER_ALLOW_SUPERUSER=1 composer install --optimize-autoloader --no-dev
 
             php artisan migrate --force
