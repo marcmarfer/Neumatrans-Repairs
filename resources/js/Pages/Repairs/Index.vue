@@ -44,10 +44,12 @@ const isModalOpen = ref(false);
 const isDeleteModalOpen = ref(false);
 const repairToDelete = ref(null);
 const typeSteps = ref([]);
+const isEditing = ref(false);
 
 const today = new Date().toISOString().split('T')[0];
 
 const form = useForm({
+  id: "",
   vehicle_id: "",
   repair_type_id: "",
   observations: "",
@@ -111,20 +113,51 @@ function filterRepairs() {
 }
 
 function addNewRepair() {
+  isEditing.value = false;
+  form.reset();
+  form.started_at = today;
+  isModalOpen.value = true;
+}
+
+function editRepair(repair) {
+  isEditing.value = true;
+  form.reset();
+  form.id = repair.id;
+  form.vehicle_id = repair.vehicle_id.toString();
+  form.repair_type_id = repair.repair_type_id.toString();
+  form.observations = repair.observations;
+  form.step_id = repair.current_step.id.toString();
+  form.started_at = repair.started_at;
+  
+  // Load the steps for this repair type
+  const selectedType = props.repair_types.find(type => type.id === repair.repair_type_id);
+  if (selectedType && selectedType.repair_type_step) {
+    typeSteps.value = selectedType.repair_type_step;
+  }
+  
   isModalOpen.value = true;
 }
 
 function closeModal() {
   isModalOpen.value = false;
   form.reset();
+  isEditing.value = false;
 }
 
 function submitForm() {
-  form.post(route("repairs.store"), {
-    onSuccess: () => {
-      closeModal();
-    },
-  });
+  if (isEditing.value) {
+    form.put(route("repairs.update", form.id), {
+      onSuccess: () => {
+        closeModal();
+      },
+    });
+  } else {
+    form.post(route("repairs.store"), {
+      onSuccess: () => {
+        closeModal();
+      },
+    });
+  }
 }
 
 function confirmDelete(repair) {
@@ -180,6 +213,7 @@ function deleteRepair() {
       :columns="columns" 
       :items-per-page="10" 
       @delete="confirmDelete"
+      @edit="editRepair"
     />
 
     <div v-if="isModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
@@ -187,7 +221,7 @@ function deleteRepair() {
 
       <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-bold">Añadir Nueva Reparación</h2>
+          <h2 class="text-xl font-bold">{{ isEditing ? 'Editar Reparación' : 'Añadir Nueva Reparación' }}</h2>
           <button @click="closeModal" class="text-gray-500 hover:text-gray-700">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -271,7 +305,7 @@ function deleteRepair() {
           <div class="mt-6 flex justify-end space-x-3">
             <LightButton type="button" @click="closeModal"> Cancelar </LightButton>
             <DarkButton type="submit" :disabled="form.processing">
-              {{ form.processing ? "Guardando..." : "Guardar" }}
+              {{ form.processing ? "Guardando..." : (isEditing ? "Actualizar" : "Guardar") }}
             </DarkButton>
           </div>
         </form>
@@ -309,7 +343,7 @@ function deleteRepair() {
 
         <div class="flex justify-end space-x-3">
           <LightButton type="button" @click="cancelDelete">Cancelar</LightButton>
-          <DeleteButton type="button" @click="deleteDeliveryNote">Eliminar</DeleteButton>
+          <DeleteButton type="button" @click="deleteRepair">Eliminar</DeleteButton>
         </div>
       </div>
     </div>

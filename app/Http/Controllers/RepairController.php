@@ -45,6 +45,26 @@ class RepairController extends Controller
         return Redirect::route('repairs.index');
     }
 
+    public function update(Request $request, Repair $repair)
+    {
+        $request->validate([
+            'vehicle_id' => 'required|exists:vehicles,id',
+            'repair_type_id' => 'required|exists:repair_types,id',
+            'observations' => 'nullable|string',
+            'step_id' => 'required|exists:repair_type_steps,id',
+            'started_at' => 'required|date',
+        ]);
+
+        $repair->vehicle_id = $request->vehicle_id;
+        $repair->repair_type_id = $request->repair_type_id;
+        $repair->observations = $request->observations;
+        $repair->step_id = $request->step_id;
+        $repair->started_at = $request->started_at;
+        $repair->save();
+
+        return Redirect::route('repairs.index');
+    }
+
     public function destroy(Repair $repair)
     {
         try {

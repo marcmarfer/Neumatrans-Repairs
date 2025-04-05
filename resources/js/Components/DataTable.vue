@@ -16,7 +16,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['delete']);
+const emit = defineEmits(['delete', 'edit']);
 
 const currentPage = ref(1);
 
@@ -86,6 +86,10 @@ const handleDelete = (item) => {
   emit('delete', item);
 };
 
+const handleEdit = (item) => {
+  emit('edit', item);
+};
+
 watch(() => props.data, () => {
   currentPage.value = 1;
 });
@@ -115,7 +119,14 @@ watch(() => props.data, () => {
               class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
             {{ getNestedValue(item, column.key) }}
           </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 flex space-x-2">
+            <button 
+              @click="handleEdit(item)" 
+              class="inline-flex items-center p-1.5 border border-red-500 text-xs font-medium rounded text-red-500 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              title="Editar"
+            >
+              <img src="/edit_icon.svg" width="20" height="20" alt="Editar" />
+            </button>
             <button 
               @click="handleDelete(item)" 
               class="inline-flex items-center p-1.5 border border-red-500 text-xs font-medium rounded text-red-500 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"

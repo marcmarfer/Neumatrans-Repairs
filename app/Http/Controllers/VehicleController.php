@@ -42,6 +42,30 @@ class VehicleController extends Controller
         return Redirect::route('vehicles.index');
     }
 
+    public function update(Request $request, Vehicle $vehicle)
+    {
+        $request->validate([
+            'client_id' => 'required|exists:clients,id',
+            'plate_number' => 'required|string|unique:vehicles,plate_number,' . $vehicle->id,
+            'brand' => 'required|string|max:255',
+            'model' => 'required|string|max:255',
+            'VIN' => 'nullable|string|unique:vehicles,VIN,' . $vehicle->id,
+            'motor_type' => 'nullable|string|max:100',
+            'added_at' => 'required|date',
+        ]);
+
+        $vehicle->client_id = $request->client_id;
+        $vehicle->plate_number = $request->plate_number;
+        $vehicle->brand = $request->brand;
+        $vehicle->model = $request->model;
+        $vehicle->VIN = $request->VIN;
+        $vehicle->motor_type = $request->motor_type;
+        $vehicle->added_at = $request->added_at;
+        $vehicle->save();
+
+        return Redirect::route('vehicles.index');
+    }
+
     public function destroy(Vehicle $vehicle)
     {
         try {

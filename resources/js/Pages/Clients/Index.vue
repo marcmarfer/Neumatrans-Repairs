@@ -36,10 +36,12 @@ const searchQuery = ref("");
 const isModalOpen = ref(false);
 const isDeleteModalOpen = ref(false);
 const clientToDelete = ref(null);
+const isEditing = ref(false);
 
 const today = new Date().toISOString().split("T")[0];
 
 const form = useForm({
+  id: "",
   DNI: "",
   name: "",
   email: "",
@@ -87,20 +89,46 @@ function filterClients() {
 }
 
 function addNewClient() {
+  isEditing.value = false;
+  form.reset();
+  form.registered_at = today;
+  isModalOpen.value = true;
+}
+
+function editClient(client) {
+  isEditing.value = true;
+  form.reset();
+  form.id = client.id;
+  form.DNI = client.DNI;
+  form.name = client.name;
+  form.email = client.email;
+  form.telephone = client.telephone;
+  form.city = client.city;
+  form.postal_code = client.postal_code;
+  form.registered_at = client.registered_at;
   isModalOpen.value = true;
 }
 
 function closeModal() {
   isModalOpen.value = false;
   form.reset();
+  isEditing.value = false;
 }
 
 function submitForm() {
-  form.post(route("clients.store"), {
-    onSuccess: () => {
-      closeModal();
-    },
-  });
+  if (isEditing.value) {
+    form.put(route("clients.update", form.id), {
+      onSuccess: () => {
+        closeModal();
+      },
+    });
+  } else {
+    form.post(route("clients.store"), {
+      onSuccess: () => {
+        closeModal();
+      },
+    });
+  }
 }
 
 function confirmDelete(client) {
@@ -155,7 +183,8 @@ function deleteClient() {
       :data="filterClients()" 
       :columns="columns" 
       :items-per-page="10"
-      @delete="confirmDelete" 
+      @delete="confirmDelete"
+      @edit="editClient" 
     />
 
     <div v-if="isModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
@@ -163,7 +192,7 @@ function deleteClient() {
 
       <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-bold">Añadir Nuevo Cliente</h2>
+          <h2 class="text-xl font-bold">{{ isEditing ? 'Editar Cliente' : 'Añadir Nuevo Cliente' }}</h2>
           <button @click="closeModal" class="text-gray-500 hover:text-gray-700">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -243,7 +272,7 @@ function deleteClient() {
           <div class="mt-6 flex justify-end space-x-3">
             <LightButton type="button" @click="closeModal"> Cancelar </LightButton>
             <DarkButton type="submit" :disabled="form.processing">
-              {{ form.processing ? "Guardando..." : "Guardar" }}
+              {{ form.processing ? "Guardando..." : (isEditing ? "Actualizar" : "Guardar") }}
             </DarkButton>
           </div>
         </form>

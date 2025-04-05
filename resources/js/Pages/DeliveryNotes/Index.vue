@@ -57,6 +57,7 @@ const isNewSupplierModalOpen = ref(false);
 const isNewFamilyModalOpen = ref(false);
 const isDeleteModalOpen = ref(false);
 const deliveryNoteToDelete = ref(null);
+const isEditing = ref(false);
 const newSupplierForm = useForm({
   name: '',
 });
@@ -67,6 +68,7 @@ const newFamilyForm = useForm({
 const today = new Date().toISOString().split('T')[0];
 
 const form = useForm({
+  id: "",
   type: "generic",
   supplier: "",
   family: "",
@@ -166,12 +168,35 @@ function filterDeliveryNotes() {
 }
 
 function addNewDeliveryNote() {
+  isEditing.value = false;
+  form.reset();
+  form.type = "generic";
+  form.quantity = 1;
+  form.added_at = today;
+  isModalOpen.value = true;
+}
+
+function editDeliveryNote(deliveryNote) {
+  isEditing.value = true;
+  form.reset();
+  form.id = deliveryNote.id;
+  form.type = deliveryNote.type === 'Genérico' ? 'generic' : (deliveryNote.type === 'Correctivo' ? 'corrective' : deliveryNote.type);
+  form.supplier = deliveryNote.supplier;
+  form.family = deliveryNote.family;
+  form.quantity = deliveryNote.quantity;
+  form.unitary_price = deliveryNote.unitary_price;
+  form.RRP = deliveryNote.RRP;
+  form.cost = deliveryNote.cost;
+  form.margin = deliveryNote.margin;
+  form.profit = deliveryNote.profit;
+  form.added_at = deliveryNote.added_at;
   isModalOpen.value = true;
 }
 
 function closeModal() {
   isModalOpen.value = false;
   form.reset();
+  isEditing.value = false;
 }
 
 function openNewSupplierModal() {
@@ -193,11 +218,19 @@ function submitNewSupplierForm() {
 }
 
 function submitForm() {
-  form.post(route("delivery_notes.store"), {
-    onSuccess: () => {
-      closeModal();
-    },
-  });
+  if (isEditing.value) {
+    form.put(route("delivery_notes.update", form.id), {
+      onSuccess: () => {
+        closeModal();
+      },
+    });
+  } else {
+    form.post(route("delivery_notes.store"), {
+      onSuccess: () => {
+        closeModal();
+      },
+    });
+  }
 }
 
 function openNewFamilyModal() {
@@ -294,15 +327,16 @@ function deleteDeliveryNote() {
       :data="filterDeliveryNotes()" 
       :columns="columns" 
       :items-per-page="10"
-      @delete="confirmDelete" 
+      @delete="confirmDelete"
+      @edit="editDeliveryNote" 
     />
 
     <div v-if="isModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="closeModal"></div>
 
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 overflow-y-auto max-h-[90vh]">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-bold">Añadir Nueva Referencia</h2>
+          <h2 class="text-xl font-bold">{{ isEditing ? 'Editar Albarán' : 'Añadir Nuevo Albarán' }}</h2>
           <button @click="closeModal" class="text-gray-500 hover:text-gray-700">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -450,7 +484,9 @@ function deleteDeliveryNote() {
 
           <div class="mt-6 flex justify-end space-x-3">
             <LightButton type="button" @click="closeModal"> Cancelar </LightButton>
-            <DarkButton type="submit" :disabled="form.processing"> Guardar </DarkButton>
+            <DarkButton type="submit" :disabled="form.processing">
+              {{ form.processing ? "Guardando..." : (isEditing ? "Actualizar" : "Guardar") }}
+            </DarkButton>
           </div>
         </form>
       </div>

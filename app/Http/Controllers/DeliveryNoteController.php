@@ -88,9 +88,34 @@ class DeliveryNoteController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, DeliveryNote $deliveryNote)
     {
-        //
+        $request->validate([
+            'type' => 'required|in:generic,corrective',
+            'supplier' => 'required|string|max:255',
+            'family' => 'required|string|max:255',
+            'quantity' => 'required|integer|min:1',
+            'unitary_price' => 'required|numeric|min:0',
+            'RRP' => 'required|numeric|min:0',
+            'cost' => 'required|numeric|min:0',
+            'margin' => 'required|numeric',
+            'profit' => 'required|numeric',
+            'added_at' => 'required|date',
+        ]);
+
+        $deliveryNote->type = $request->type;
+        $deliveryNote->supplier = $request->supplier;
+        $deliveryNote->family = $request->family;
+        $deliveryNote->quantity = $request->quantity;
+        $deliveryNote->unitary_price = $request->unitary_price;
+        $deliveryNote->RRP = $request->RRP;
+        $deliveryNote->cost = $request->cost;
+        $deliveryNote->margin = $request->margin;
+        $deliveryNote->profit = $request->profit;
+        $deliveryNote->added_at = $request->added_at;
+        $deliveryNote->save();
+
+        return Redirect::route('delivery_notes.index');
     }
 
     /**

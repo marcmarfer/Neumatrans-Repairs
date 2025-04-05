@@ -42,6 +42,30 @@ class ClientController extends Controller
         return Redirect::route('clients.index');
     }
 
+    public function update(Request $request, Client $client)
+    {
+        $request->validate([
+            'DNI' => 'required|string|unique:clients,DNI,' . $client->id,
+            'name' => 'required|string|max:255',
+            'email' => 'nullable|email|unique:clients,email,' . $client->id,
+            'telephone' => 'required|string|max:15',
+            'city' => 'nullable|string|max:100',
+            'postal_code' => 'nullable|string|max:10',
+            'registered_at' => 'required|date',
+        ]);
+
+        $client->DNI = $request->DNI;
+        $client->name = $request->name;
+        $client->email = $request->email;
+        $client->telephone = $request->telephone;
+        $client->city = $request->city;
+        $client->postal_code = $request->postal_code;
+        $client->registered_at = $request->registered_at;
+        $client->save();
+
+        return Redirect::route('clients.index');
+    }
+
     public function destroy(Client $client)
     {
         try {

@@ -39,10 +39,12 @@ const dateRange = ref({
 const isModalOpen = ref(false);
 const isDeleteModalOpen = ref(false);
 const vehicleToDelete = ref(null);
+const isEditing = ref(false);
 
 const today = new Date().toISOString().split('T')[0];
 
 const form = useForm({
+  id: "",
   client_id: "",
   plate_number: "",
   brand: "",
@@ -90,20 +92,46 @@ function filterVehicles() {
 }
 
 function addNewVehicle() {
+  isEditing.value = false;
+  form.reset();
+  form.added_at = today;
+  isModalOpen.value = true;
+}
+
+function editVehicle(vehicle) {
+  isEditing.value = true;
+  form.reset();
+  form.id = vehicle.id;
+  form.client_id = vehicle.client_id.toString();
+  form.plate_number = vehicle.plate_number;
+  form.brand = vehicle.brand;
+  form.model = vehicle.model;
+  form.VIN = vehicle.VIN;
+  form.motor_type = vehicle.motor_type;
+  form.added_at = vehicle.added_at;
   isModalOpen.value = true;
 }
 
 function closeModal() {
   isModalOpen.value = false;
   form.reset();
+  isEditing.value = false;
 }
 
 function submitForm() {
-  form.post(route("vehicles.store"), {
-    onSuccess: () => {
-      closeModal();
-    },
-  });
+  if (isEditing.value) {
+    form.put(route("vehicles.update", form.id), {
+      onSuccess: () => {
+        closeModal();
+      },
+    });
+  } else {
+    form.post(route("vehicles.store"), {
+      onSuccess: () => {
+        closeModal();
+      },
+    });
+  }
 }
 
 function confirmDelete(vehicle) {
@@ -159,6 +187,7 @@ function deleteVehicle() {
       :columns="columns" 
       :items-per-page="10" 
       @delete="confirmDelete"
+      @edit="editVehicle"
     />
 
     <div v-if="isModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
@@ -166,7 +195,7 @@ function deleteVehicle() {
 
       <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-bold">Añadir Nuevo Vehículo</h2>
+          <h2 class="text-xl font-bold">{{ isEditing ? 'Editar Vehículo' : 'Añadir Nuevo Vehículo' }}</h2>
           <button @click="closeModal" class="text-gray-500 hover:text-gray-700">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -252,7 +281,7 @@ function deleteVehicle() {
           <div class="mt-6 flex justify-end space-x-3">
             <LightButton type="button" @click="closeModal"> Cancelar </LightButton>
             <DarkButton type="submit" :disabled="form.processing">
-              {{ form.processing ? "Guardando..." : "Guardar" }}
+              {{ form.processing ? "Guardando..." : (isEditing ? "Actualizar" : "Guardar") }}
             </DarkButton>
           </div>
         </form>
@@ -291,7 +320,7 @@ function deleteVehicle() {
 
         <div class="flex justify-end space-x-3">
           <LightButton type="button" @click="cancelDelete">Cancelar</LightButton>
-          <DeleteButton type="button" @click="deleteDeliveryNote">Eliminar</DeleteButton>
+          <DeleteButton type="button" @click="deleteVehicle">Eliminar</DeleteButton>
         </div>
       </div>
     </div>
