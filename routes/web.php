@@ -12,6 +12,7 @@ use App\Http\Controllers\DeliveryNoteController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\InsightsController;
+use App\Http\Controllers\RepairTrackingController;
 use App\Http\Middleware\ProductionMiddleware;
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -36,6 +37,8 @@ Route::get('/repairs', [RepairController::class, 'index'])->name('repairs.index'
 Route::post('/repairs', [RepairController::class, 'store'])->name('repairs.store');
 Route::put('/repairs/{repair}', [RepairController::class, 'update'])->name('repairs.update');
 Route::delete('/repairs/{repair}', [RepairController::class, 'destroy'])->name('repairs.destroy');
+Route::get('/repair/track/{token}', [RepairTrackingController::class, 'index'])
+    ->name('repairs.track');
 
 Route::get('/delivery-notes', [DeliveryNoteController::class, 'index'])->name('delivery_notes.index');
 Route::post('/delivery-notes', [DeliveryNoteController::class, 'store'])->name('delivery_notes.store');

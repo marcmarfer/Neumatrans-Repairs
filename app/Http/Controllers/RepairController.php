@@ -6,8 +6,11 @@ use App\Models\Repair;
 use App\Models\Vehicle;
 use App\Models\RepairType;
 use App\Models\RepairTypeStep;
+use App\Mail\RepairStatusNotification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Str;
 
 class RepairController extends Controller
 {
@@ -40,7 +43,19 @@ class RepairController extends Controller
         $repair->observations = $request->observations;
         $repair->step_id = $request->step_id;
         $repair->started_at = $request->started_at;
+        $repair->tracking_token = Str::uuid();
         $repair->save();
+
+        $repair->load(['vehicle.client', 'repairType', 'currentStep']);
+
+        if ($repair->vehicle->client->email) {
+            try {
+                Mail::to($repair->vehicle->client->email)
+                    ->send(new RepairStatusNotification($repair));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send email notification: ' . $e->getMessage());
+            }
+        }
 
         return Redirect::route('repairs.index');
     }
@@ -55,12 +70,45 @@ class RepairController extends Controller
             'started_at' => 'required|date',
         ]);
 
+        $oldStepId = $repair->step_id;
+        $newStepId = $request->step_id;
+        
         $repair->vehicle_id = $request->vehicle_id;
         $repair->repair_type_id = $request->repair_type_id;
         $repair->observations = $request->observations;
-        $repair->step_id = $request->step_id;
+        $repair->step_id = $newStepId;
         $repair->started_at = $request->started_at;
+        
+        if (!$repair->tracking_token) {
+            $repair->tracking_token = Str::uuid();
+        }
+        
+        $repairType = RepairType::with(['repairTypeStep' => function($query) {
+            $query->orderBy('step_order', 'desc');
+        }])->find($repair->repair_type_id);
+        
+        $isLastStep = false;
+        if ($repairType && count($repairType->repairTypeStep) > 0) {
+            $lastStep = $repairType->repairTypeStep[0];
+            $isLastStep = $lastStep->id == $newStepId && $oldStepId != $newStepId;
+        }
+        
+        if ($isLastStep && !$repair->completed_at) {
+            $repair->completed_at = now();
+        }
+        
         $repair->save();
+        
+        $repair->load(['vehicle.client', 'repairType', 'currentStep']);
+        
+        if ($isLastStep && $repair->completed_at && $repair->vehicle->client->email) {
+            try {
+                Mail::to($repair->vehicle->client->email)
+                    ->send(new RepairStatusNotification($repair, true));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send completion email: ' . $e->getMessage());
+            }
+        }
 
         return Redirect::route('repairs.index');
     }

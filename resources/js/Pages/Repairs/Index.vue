@@ -35,6 +35,11 @@ const columns = [
   { key: "started_at", label: "Fecha de Inicio" },
 ];
 
+const completedColumns = [
+  ...columns,
+  { key: "completed_at", label: "Fecha de Finalización" },
+];
+
 const searchQuery = ref("");
 const dateRange = ref({
   startDate: "",
@@ -45,6 +50,7 @@ const isDeleteModalOpen = ref(false);
 const repairToDelete = ref(null);
 const typeSteps = ref([]);
 const isEditing = ref(false);
+const activeTab = ref("inProgress");
 
 const today = new Date().toISOString().split('T')[0];
 
@@ -56,6 +62,14 @@ const form = useForm({
   step_id: "",
   started_at: today,
 });
+
+function inProgressRepairs() {
+  return filterRepairs().filter(repair => !repair.completed_at);
+}
+
+function completedRepairs() {
+  return filterRepairs().filter(repair => repair.completed_at);
+}
 
 watch(() => form.repair_type_id, (newTypeId) => {
   if (newTypeId) {
@@ -110,6 +124,10 @@ function filterRepairs() {
   }
 
   return filteredRepairs;
+}
+
+function setActiveTab(tab) {
+  activeTab.value = tab;
 }
 
 function addNewRepair() {
@@ -208,13 +226,58 @@ function deleteRepair() {
       />
     </div>
 
-    <DataTable 
-      :data="filterRepairs()" 
-      :columns="columns" 
-      :items-per-page="10" 
-      @delete="confirmDelete"
-      @edit="editRepair"
-    />
+    <div class="border-b border-gray-200 mb-6">
+      <div class="flex flex-wrap -mb-px">
+        <button
+          @click="setActiveTab('inProgress')"
+          :class="[
+            'inline-block py-4 px-6 border-b-2 font-medium text-sm',
+            activeTab === 'inProgress'
+              ? 'border-black text-black'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          ]"
+        >
+          En Progreso ({{ inProgressRepairs().length }})
+        </button>
+        <button
+          @click="setActiveTab('completed')"
+          :class="[
+            'inline-block py-4 px-6 border-b-2 font-medium text-sm',
+            activeTab === 'completed'
+              ? 'border-black text-black'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          ]"
+        >
+          Completadas ({{ completedRepairs().length }})
+        </button>
+      </div>
+    </div>
+
+    <div v-if="activeTab === 'inProgress'">
+      <DataTable 
+        :data="inProgressRepairs()" 
+        :columns="columns" 
+        :items-per-page="10" 
+        @delete="confirmDelete"
+        @edit="editRepair"
+      />
+      <p v-if="inProgressRepairs().length === 0" class="text-center text-gray-500 my-8">
+        No hay reparaciones en progreso
+      </p>
+    </div>
+
+    <div v-if="activeTab === 'completed'">
+      <DataTable 
+        :data="completedRepairs()" 
+        :columns="completedColumns" 
+        :items-per-page="10" 
+        @delete="confirmDelete"
+        @edit="editRepair"
+      />
+      <p v-if="completedRepairs().length === 0" class="text-center text-gray-500 my-8">
+        No hay reparaciones completadas
+      </p>
+    </div>
 
     <div v-if="isModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="closeModal"></div>

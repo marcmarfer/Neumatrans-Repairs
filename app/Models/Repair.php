@@ -14,7 +14,14 @@ class Repair extends Model
         'vehicle_id',
         'observations',
         'step_id',
-        'started_at'
+        'tracking_token',
+        'started_at',
+        'completed_at'
+    ];
+
+    protected $casts = [
+        'started_at' => 'datetime',
+        'completed_at' => 'datetime',
     ];
 
     public function vehicle()
