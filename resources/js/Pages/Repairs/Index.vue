@@ -24,6 +24,16 @@ const props = defineProps({
   },
 });
 
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-ES', { 
+    day: '2-digit', 
+    month: '2-digit', 
+    year: 'numeric' 
+  });
+};
+
 const columns = [
   { key: "id", label: "ID" },
   { key: "vehicle.client.name", label: "Cliente" },
@@ -32,12 +42,25 @@ const columns = [
   { key: "repair_type.name", label: "Tipo de Reparación" },
   { key: "current_step.step_name", label: "Paso Actual" },
   { key: "observations", label: "Observaciones" },
-  { key: "started_at", label: "Fecha de Inicio" },
+  { 
+    key: "started_at", 
+    label: "Fecha de Inicio",
+    formatter: formatDate
+  },
 ];
 
 const completedColumns = [
-  ...columns,
-  { key: "completed_at", label: "Fecha de Finalización" },
+  ...columns.slice(0, -1),
+  { 
+    key: "started_at", 
+    label: "Fecha de Inicio",
+    formatter: formatDate
+  },
+  { 
+    key: "completed_at", 
+    label: "Fecha de Finalización",
+    formatter: formatDate
+  },
 ];
 
 const searchQuery = ref("");

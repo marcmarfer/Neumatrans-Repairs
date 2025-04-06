@@ -16,6 +16,16 @@ const props = defineProps({
   },
 });
 
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-ES', { 
+    day: '2-digit', 
+    month: '2-digit', 
+    year: 'numeric' 
+  });
+};
+
 const columns = [
   { key: "id", label: "ID" },
   { key: "DNI", label: "DNI" },
@@ -24,7 +34,11 @@ const columns = [
   { key: "telephone", label: "Teléfono" },
   { key: "city", label: "Ciudad" },
   { key: "postal_code", label: "Código Postal" },
-  { key: "registered_at", label: "Fecha de Registro" },
+  { 
+    key: "registered_at", 
+    label: "Fecha de Registro",
+    formatter: formatDate
+  },
 ];
 
 const dateRange = ref({

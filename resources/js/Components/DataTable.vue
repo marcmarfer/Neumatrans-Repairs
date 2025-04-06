@@ -117,7 +117,7 @@ watch(() => props.data, () => {
           <td v-for="column in columns" 
               :key="column.key"
               class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-            {{ getNestedValue(item, column.key) }}
+            {{ column.formatter ? column.formatter(getNestedValue(item, column.key)) : getNestedValue(item, column.key) }}
           </td>
           <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 flex space-x-2">
             <button 

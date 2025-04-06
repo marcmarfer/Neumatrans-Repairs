@@ -20,6 +20,16 @@ const props = defineProps({
   },
 });
 
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-ES', { 
+    day: '2-digit', 
+    month: '2-digit', 
+    year: 'numeric' 
+  });
+};
+
 const columns = [
   { key: "id", label: "ID" },
   { key: "client.name", label: "Cliente" },
@@ -28,7 +38,11 @@ const columns = [
   { key: "model", label: "Modelo" },
   { key: "VIN", label: "VIN" },
   { key: "motor_type", label: "Tipo de Motor" },
-  { key: "added_at", label: "Fecha de Alta" },
+  { 
+    key: "added_at", 
+    label: "Fecha de Alta",
+    formatter: formatDate
+  },
 ];
 
 const searchQuery = ref("");

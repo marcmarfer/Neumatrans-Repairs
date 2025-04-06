@@ -33,6 +33,16 @@ function getSortedFamilies() {
   return [...props.families].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-ES', { 
+    day: '2-digit', 
+    month: '2-digit', 
+    year: 'numeric' 
+  });
+};
+
 const columns = [
   { key: "id", label: "ID" },
   { key: "type", label: "Tipo" },
@@ -44,7 +54,11 @@ const columns = [
   { key: "cost", label: "Coste" },
   { key: "margin", label: "Margen" },
   { key: "profit", label: "Beneficio" },
-  { key: "added_at", label: "Fecha de Alta" },
+  { 
+    key: "added_at", 
+    label: "Fecha de Alta",
+    formatter: formatDate
+  },
 ];
 
 const searchQuery = ref("");
