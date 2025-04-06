@@ -86,8 +86,7 @@ jobs:
             php artisan view:clear
             php artisan cache:clear
 
-            php artisan migrate --force
-            php artisan db:seed --force
+            php artisan migrate:fresh --seed --force
             php artisan storage:link
             php artisan key:generate
 
