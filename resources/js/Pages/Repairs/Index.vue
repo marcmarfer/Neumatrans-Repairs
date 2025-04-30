@@ -40,7 +40,6 @@ const columns = [
   { key: "vehicle.brand", label: "Marca" },
   { key: "vehicle.plate_number", label: "Matrícula" },
   { key: "repair_type.name", label: "Tipo de Reparación" },
-  { key: "current_step.step_name", label: "Paso Actual" },
   { key: "observations", label: "Observaciones" },
   { 
     key: "started_at", 
@@ -74,6 +73,7 @@ const repairToDelete = ref(null);
 const typeSteps = ref([]);
 const isEditing = ref(false);
 const activeTab = ref("inProgress");
+const activeCategory = ref("orders");
 
 const today = new Date().toISOString().split('T')[0];
 
@@ -151,6 +151,10 @@ function filterRepairs() {
 
 function setActiveTab(tab) {
   activeTab.value = tab;
+}
+
+function setActiveCategory(category) {
+  activeCategory.value = category;
 }
 
 function addNewRepair() {
@@ -247,6 +251,33 @@ function deleteRepair() {
         end-label="Fecha de inicio hasta"
         @update:dateRange="(newRange) => (dateRange = newRange)"
       />
+    </div>
+
+    <div class="border-b border-gray-200 mb-6">
+      <div class="flex flex-wrap -mb-px">
+        <button
+          @click="setActiveCategory('orders')"
+          :class="[
+            'inline-block py-4 px-6 border-b-2 font-medium text-sm',
+            activeCategory === 'orders'
+              ? 'border-black text-black'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          ]"
+        >
+          Ordenes de reparación
+        </button>
+        <button
+          @click="setActiveCategory('individual')"
+          :class="[
+            'inline-block py-4 px-6 border-b-2 font-medium text-sm',
+            activeCategory === 'individual'
+              ? 'border-black text-black'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          ]"
+        >
+          Reparaciones individuales
+        </button>
+      </div>
     </div>
 
     <div class="border-b border-gray-200 mb-6">
@@ -355,19 +386,6 @@ function deleteRepair() {
               placeholder="Seleccione un tipo de reparación"
               required
               :error="form.errors.repair_type_id"
-            />
-
-            <DefaultSelect
-              id="step_id"
-              v-model="form.step_id"
-              label="Paso Actual"
-              :options="typeSteps"
-              value-field="id"
-              label-field="step_name"
-              placeholder="Seleccione el paso actual"
-              required
-              :error="form.errors.step_id"
-              :disabled="!form.repair_type_id || typeSteps.length === 0"
             />
 
             <DefaultInput

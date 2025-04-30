@@ -12,6 +12,7 @@ class Repair extends Model
     protected $fillable = [
         'repair_type_id',
         'vehicle_id',
+        'repair_order_id',
         'observations',
         'step_id',
         'tracking_token',
@@ -37,5 +38,10 @@ class Repair extends Model
     public function currentStep()
     {
         return $this->belongsTo(RepairTypeStep::class, 'step_id');
+    }
+
+    public function repairOrder()
+    {
+        return $this->belongsTo(RepairOrder::class);
     }
 }
