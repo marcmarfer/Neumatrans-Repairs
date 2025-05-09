@@ -11,7 +11,7 @@ class RepairTrackingController extends Controller
     public function index($token)
     {
         $repair = Repair::where('tracking_token', $token)
-            ->with(['vehicle.client', 'repairType', 'currentStep'])
+            ->with(['vehicle.client', 'repairType', 'repairOrder.repairs.repairType'])
             ->firstOrFail();
 
         return Inertia::render('Repairs/Track', [
@@ -19,7 +19,13 @@ class RepairTrackingController extends Controller
             'vehicle' => $repair->vehicle,
             'client' => $repair->vehicle->client,
             'repairType' => $repair->repairType,
-            'currentStep' => $repair->currentStep,
+            'repairOrder' => $repair->repairOrder,
+            'statusLabels' => [
+                'reception' => 'En recepción',
+                'diagnosing' => 'Diagnóstico',
+                'in_repair' => 'En reparación',
+                'finished' => 'Finalizado'
+            ]
         ]);
     }
 }

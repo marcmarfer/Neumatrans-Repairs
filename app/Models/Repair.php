@@ -14,7 +14,6 @@ class Repair extends Model
         'vehicle_id',
         'repair_order_id',
         'observations',
-        'step_id',
         'tracking_token',
         'started_at',
         'completed_at'
@@ -33,11 +32,6 @@ class Repair extends Model
     public function repairType()
     {
         return $this->belongsTo(RepairType::class);
-    }
-
-    public function currentStep()
-    {
-        return $this->belongsTo(RepairTypeStep::class, 'step_id');
     }
 
     public function repairOrder()

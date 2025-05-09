@@ -22,6 +22,10 @@ const props = defineProps({
     type: Array,
     required: true,
   },
+  repair_orders: {
+    type: Array,
+    required: true,
+  },
 });
 
 const formatDate = (dateString) => {
@@ -40,6 +44,11 @@ const columns = [
   { key: "vehicle.brand", label: "Marca" },
   { key: "vehicle.plate_number", label: "Matrícula" },
   { key: "repair_type.name", label: "Tipo de Reparación" },
+  { 
+    key: "repair_order_id", 
+    label: "Orden de Reparación",
+    formatter: (repairOrderId) => repairOrderId || 'Sin asignar'
+  },
   { key: "observations", label: "Observaciones" },
   { 
     key: "started_at", 
@@ -73,7 +82,8 @@ const repairToDelete = ref(null);
 const typeSteps = ref([]);
 const isEditing = ref(false);
 const activeTab = ref("inProgress");
-const activeCategory = ref("orders");
+const activeCategory = ref("individual");
+const filteredRepairOrders = ref([]);
 
 const today = new Date().toISOString().split('T')[0];
 
@@ -82,7 +92,7 @@ const form = useForm({
   vehicle_id: "",
   repair_type_id: "",
   observations: "",
-  step_id: "",
+  repair_order_id: "",
   started_at: today,
 });
 
@@ -97,18 +107,32 @@ function completedRepairs() {
 watch(() => form.repair_type_id, (newTypeId) => {
   if (newTypeId) {
     const selectedType = props.repair_types.find(type => type.id.toString() === newTypeId);
-    if (selectedType && selectedType.repair_type_step) {
-      typeSteps.value = selectedType.repair_type_step;
-      if (typeSteps.value.length > 0) {
-        form.step_id = typeSteps.value[0].id.toString();
-      }
-    } else {
+    if (!selectedType) {
       typeSteps.value = [];
-      form.step_id = "";
     }
   } else {
     typeSteps.value = [];
-    form.step_id = "";
+  }
+});
+
+watch(() => form.vehicle_id, (newVehicleId) => {
+  if (newVehicleId) {
+    const vehicle = props.vehicles.find(v => v.id.toString() === newVehicleId.toString());
+    if (vehicle && vehicle.client_id) {
+      filteredRepairOrders.value = props.repair_orders.filter(ro => 
+        ro.client_id === vehicle.client_id
+      );
+      
+      if (form.repair_order_id && !filteredRepairOrders.value.some(ro => ro.id.toString() === form.repair_order_id.toString())) {
+        form.repair_order_id = "";
+      }
+    } else {
+      filteredRepairOrders.value = [];
+      form.repair_order_id = "";
+    }
+  } else {
+    filteredRepairOrders.value = [];
+    form.repair_order_id = "";
   }
 });
 
@@ -155,6 +179,9 @@ function setActiveTab(tab) {
 
 function setActiveCategory(category) {
   activeCategory.value = category;
+  if (category === 'orders') {
+    router.visit(route('repair-orders.index'));
+  }
 }
 
 function addNewRepair() {
@@ -171,13 +198,21 @@ function editRepair(repair) {
   form.vehicle_id = repair.vehicle_id.toString();
   form.repair_type_id = repair.repair_type_id.toString();
   form.observations = repair.observations;
-  form.step_id = repair.current_step.id.toString();
-  form.started_at = repair.started_at;
+  form.repair_order_id = repair.repair_order_id ? repair.repair_order_id.toString() : "";
   
   // Load the steps for this repair type
   const selectedType = props.repair_types.find(type => type.id === repair.repair_type_id);
   if (selectedType && selectedType.repair_type_step) {
     typeSteps.value = selectedType.repair_type_step;
+  }
+  
+  if (repair.vehicle_id) {
+    const vehicle = props.vehicles.find(v => v.id === repair.vehicle_id);
+    if (vehicle && vehicle.client_id) {
+      filteredRepairOrders.value = props.repair_orders.filter(ro => 
+        ro.client_id === vehicle.client_id
+      );
+    }
   }
   
   isModalOpen.value = true;
@@ -373,6 +408,22 @@ function deleteRepair() {
                 {{ option.plate_number }} - {{ option.brand }} {{ option.model }} ({{
                   option.client?.name
                 }})
+              </template>
+            </DefaultSelect>
+
+            <DefaultSelect
+              id="repair_order_id"
+              v-model="form.repair_order_id"
+              label="Orden de Reparación"
+              :options="filteredRepairOrders"
+              value-field="id"
+              placeholder="Seleccione una orden de reparación"
+              required
+              :error="form.errors.repair_order_id"
+              :disabled="!form.vehicle_id"
+            >
+              <template #option="{ option }">
+                Orden #{{ option.id }} - {{ option.client?.name }}
               </template>
             </DefaultSelect>
 

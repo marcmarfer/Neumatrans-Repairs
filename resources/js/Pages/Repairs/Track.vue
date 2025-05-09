@@ -6,7 +6,8 @@ const props = defineProps({
   vehicle: Object,
   client: Object,
   repairType: Object,
-  currentStep: Object,
+  repairOrder: Object,
+  statusLabels: Object,
 });
 
 function isCompleted() {
@@ -14,7 +15,25 @@ function isCompleted() {
 }
 
 function isReadyForPickup() {
-  return isCompleted() && props.currentStep.step_name.toLowerCase().includes('finalizado');
+  return isCompleted() && props.repairOrder?.status === 'finished';
+}
+
+function getStatusLabel() {
+  if (!props.repairOrder) return 'En proceso';
+  return props.statusLabels[props.repairOrder.status] || props.repairOrder.status;
+}
+
+function getStatusClass() {
+  if (!props.repairOrder) return 'bg-yellow-500';
+  
+  const statusClasses = {
+    'reception': 'bg-yellow-500',
+    'diagnosing': 'bg-yellow-500',
+    'in_repair': 'bg-orange-500',
+    'finished': 'bg-green-600'
+  };
+  
+  return statusClasses[props.repairOrder.status] || 'bg-yellow-500';
 }
 
 const formatDate = (dateString) => {
@@ -37,52 +56,54 @@ const formatDate = (dateString) => {
         <div class="bg-red-500 py-4 px-6 text-white">
           <div class="flex justify-between items-center">
             <h1 class="text-2xl font-bold">NTC Car Service</h1>
+          </div>
+        </div>
+
+        <!-- Estado de la reparación destacado -->
+        <div :class="[getStatusClass(), 'py-3 px-6 text-white']">
+          <div class="flex justify-between items-center">
+            <h2 class="text-xl font-semibold">Estado: {{ getStatusLabel() }}</h2>
             <div v-if="isCompleted()" class="bg-gray-800 px-4 py-1 rounded-full text-sm font-bold">
               Completada
             </div>
-            <div v-else class="bg-yellow-500 px-4 py-1 rounded-full text-sm font-bold">
+            <div v-else class="bg-white text-gray-800 px-4 py-1 rounded-full text-sm font-bold">
               En Progreso
             </div>
           </div>
         </div>
 
         <div class="p-6">
-          <h2 class="text-xl font-bold mb-4">Detalles de la Reparación</h2>
-
-          <div class="grid md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <h3 class="text-lg font-bold mb-1">Cliente</h3>
-              <div class="bg-gray-50 p-4 rounded-lg">
-                <p><span class="font-semibold">Nombre:</span> {{ client.name }}</p>
-                <p><span class="font-semibold">Email:</span> {{ client.email }}</p>
-                <p><span class="font-semibold">Teléfono:</span> {{ client.telephone }}</p>
-              </div>
-            </div>
-
-            <div>
-              <h3 class="text-lg font-bold mb-1">Vehículo</h3>
-              <div class="bg-gray-50 p-4 rounded-lg">
-                <p><span class="font-semibold">Matrícula:</span> {{ vehicle.plate_number }}</p>
-                <p><span class="font-semibold">Marca:</span> {{ vehicle.brand }}</p>
-                <p><span class="font-semibold">Modelo:</span> {{ vehicle.model }}</p>
-                <p v-if="vehicle.VIN"><span class="font-semibold">VIN:</span> {{ vehicle.VIN }}</p>
-              </div>
+          <div class="mb-6">
+            <h3 class="text-lg font-bold mb-3">Vehículo</h3>
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <p><span class="font-semibold">Matrícula:</span> {{ vehicle.plate_number }}</p>
+              <p><span class="font-semibold">Marca:</span> {{ vehicle.brand }}</p>
+              <p><span class="font-semibold">Modelo:</span> {{ vehicle.model }}</p>
+              <p v-if="vehicle.VIN"><span class="font-semibold">VIN:</span> {{ vehicle.VIN }}</p>
             </div>
           </div>
 
+          <!-- Mostrar todas las reparaciones asociadas -->
           <div class="mb-6">
-            <h3 class="text-lg font-bold mb-1">Información de la Reparación</h3>
-            <div class="bg-gray-50 p-4 rounded-lg">
+            <h3 class="text-lg font-bold mb-3">Reparaciones</h3>
+            <div v-if="repairOrder && repairOrder.repairs && repairOrder.repairs.length > 0">
+              <div v-for="(repairItem, index) in repairOrder.repairs" :key="index" class="bg-gray-50 p-4 rounded-lg mb-2">
+                <p><span class="font-semibold">Tipo de Reparación:</span> {{ repairItem.repair_type?.name }}</p>
+                <p v-if="repairItem.observations"><span class="font-semibold">Observaciones:</span> {{ repairItem.observations }}</p>
+                <p><span class="font-semibold">Fecha de Inicio:</span> {{ formatDate(repairItem.started_at) }}</p>
+                <p v-if="repairItem.completed_at"><span class="font-semibold">Fecha de Finalización:</span> {{ formatDate(repairItem.completed_at) }}</p>
+              </div>
+            </div>
+            <div v-else class="bg-gray-50 p-4 rounded-lg">
               <p><span class="font-semibold">Tipo de Reparación:</span> {{ repairType.name }}</p>
               <p><span class="font-semibold">Fecha de Inicio:</span> {{ formatDate(repair.started_at) }}</p>
               <p v-if="isCompleted()"><span class="font-semibold">Fecha de Finalización:</span> {{ formatDate(repair.completed_at) }}</p>
-              <p><span class="font-semibold">Estado Actual:</span> {{ currentStep.step_name }}</p>
               <p v-if="repair.observations"><span class="font-semibold">Observaciones:</span> {{ repair.observations }}</p>
             </div>
           </div>
 
-          <div v-if="isReadyForPickup()" class="bg-gray-100 border border-gray-300 p-4 rounded-lg mb-6">
-            <h3 class="text-lg font-bold text-gray-800 mb-2">¡Su vehículo está listo para recoger!</h3>
+          <div v-if="isReadyForPickup()" class="bg-green-50 border border-green-200 p-4 rounded-lg mb-6">
+            <h3 class="text-lg font-bold text-green-800 mb-2">¡Su vehículo está listo para recoger!</h3>
             <p class="text-gray-700">
               Puede pasar por nuestro taller en horario de atención:
               <br />

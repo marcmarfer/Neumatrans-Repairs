@@ -57,7 +57,22 @@
         
         <div class="info">
             <p><strong>Tipo de reparación:</strong> {{ $repair->repairType->name }}</p>
-            <p><strong>Estado actual:</strong> {{ $repair->currentStep->step_name }}</p>
+            <p><strong>Estado actual:</strong> 
+                @if($repair->repairOrder)
+                    @php
+                        $statusLabels = [
+                            'reception' => 'En recepción',
+                            'diagnosing' => 'Diagnóstico',
+                            'in_repair' => 'En reparación',
+                            'finished' => 'Finalizado'
+                        ];
+                        $status = $statusLabels[$repair->repairOrder->status] ?? $repair->repairOrder->status;
+                    @endphp
+                    {{ $status }}
+                @else
+                    En proceso
+                @endif
+            </p>
             <p><strong>Fecha de inicio:</strong> {{ $repair->started_at->format('d/m/Y') }}</p>
             @if($repair->observations)
             <p><strong>Observaciones:</strong> {{ $repair->observations }}</p>

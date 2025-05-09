@@ -5,7 +5,7 @@ use Inertia\Inertia;
 use App\Models\Repair;
 use App\Models\Vehicle;
 use App\Models\RepairType;
-use App\Models\RepairTypeStep;
+use App\Models\RepairOrder;
 use App\Mail\RepairStatusNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -16,14 +16,13 @@ class RepairController extends Controller
 {
     public function index()
     {
-        $repair_types = RepairType::with(['repairTypeStep' => function($query) {
-            $query->orderBy('step_order');
-        }])->get();
+        $repair_types = RepairType::all();
         
         return Inertia::render('Repairs/Index', [
-            'repairs' => Repair::with(['repairType', 'vehicle.client', 'currentStep'])->get(),
+            'repairs' => Repair::with(['repairType', 'vehicle.client', 'repairOrder'])->get(),
             'vehicles' => Vehicle::with('client')->get(),
-            'repair_types' => $repair_types
+            'repair_types' => $repair_types,
+            'repair_orders' => RepairOrder::with('client')->get()
         ]);
     }
 
@@ -33,20 +32,20 @@ class RepairController extends Controller
             'vehicle_id' => 'required|exists:vehicles,id',
             'repair_type_id' => 'required|exists:repair_types,id',
             'observations' => 'nullable|string',
-            'step_id' => 'required|exists:repair_type_steps,id',
             'started_at' => 'required|date',
+            'repair_order_id' => 'required|exists:repair_orders,id',
         ]);
 
         $repair = new Repair();
         $repair->vehicle_id = $request->vehicle_id;
         $repair->repair_type_id = $request->repair_type_id;
         $repair->observations = $request->observations;
-        $repair->step_id = $request->step_id;
         $repair->started_at = $request->started_at;
+        $repair->repair_order_id = $request->repair_order_id;
         $repair->tracking_token = Str::uuid();
         $repair->save();
 
-        $repair->load(['vehicle.client', 'repairType', 'currentStep']);
+        $repair->load(['vehicle.client', 'repairType']);
 
         if ($repair->vehicle->client->email) {
             try {
@@ -66,42 +65,31 @@ class RepairController extends Controller
             'vehicle_id' => 'required|exists:vehicles,id',
             'repair_type_id' => 'required|exists:repair_types,id',
             'observations' => 'nullable|string',
-            'step_id' => 'required|exists:repair_type_steps,id',
             'started_at' => 'required|date',
+            'repair_order_id' => 'required|exists:repair_orders,id',
         ]);
-
-        $oldStepId = $repair->step_id;
-        $newStepId = $request->step_id;
         
         $repair->vehicle_id = $request->vehicle_id;
         $repair->repair_type_id = $request->repair_type_id;
         $repair->observations = $request->observations;
-        $repair->step_id = $newStepId;
         $repair->started_at = $request->started_at;
+        $repair->repair_order_id = $request->repair_order_id;
         
         if (!$repair->tracking_token) {
             $repair->tracking_token = Str::uuid();
         }
         
-        $repairType = RepairType::with(['repairTypeStep' => function($query) {
-            $query->orderBy('step_order', 'desc');
-        }])->find($repair->repair_type_id);
-        
-        $isLastStep = false;
-        if ($repairType && count($repairType->repairTypeStep) > 0) {
-            $lastStep = $repairType->repairTypeStep[0];
-            $isLastStep = $lastStep->id == $newStepId && $oldStepId != $newStepId;
-        }
-        
-        if ($isLastStep && !$repair->completed_at) {
+        $repairOrder = RepairOrder::find($repair->repair_order_id);
+        if ($repairOrder && $repairOrder->status === 'finished' && !$repair->completed_at) {
             $repair->completed_at = now();
         }
         
         $repair->save();
         
-        $repair->load(['vehicle.client', 'repairType', 'currentStep']);
+        $repair->load(['vehicle.client', 'repairType']);
         
-        if ($isLastStep && $repair->completed_at && $repair->vehicle->client->email) {
+        if ($repair->completed_at && $repair->vehicle->client->email && 
+            $repair->wasChanged('completed_at')) {
             try {
                 Mail::to($repair->vehicle->client->email)
                     ->send(new RepairStatusNotification($repair, true));

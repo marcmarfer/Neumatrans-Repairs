@@ -8,6 +8,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\RepairController;
+use App\Http\Controllers\RepairOrderController;
 use App\Http\Controllers\DeliveryNoteController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\FamilyController;
@@ -39,6 +40,11 @@ Route::put('/repairs/{repair}', [RepairController::class, 'update'])->name('repa
 Route::delete('/repairs/{repair}', [RepairController::class, 'destroy'])->name('repairs.destroy');
 Route::get('/repair/track/{token}', [RepairTrackingController::class, 'index'])
     ->name('repairs.track');
+
+Route::get('/repair-orders', [RepairOrderController::class, 'index'])->name('repair-orders.index');
+Route::post('/repair-orders', [RepairOrderController::class, 'store'])->name('repair-orders.store');
+Route::put('/repair-orders/{repairOrder}', [RepairOrderController::class, 'update'])->name('repair-orders.update');
+Route::delete('/repair-orders/{repairOrder}', [RepairOrderController::class, 'destroy'])->name('repair-orders.destroy');
 
 Route::get('/delivery-notes', [DeliveryNoteController::class, 'index'])->name('delivery_notes.index');
 Route::post('/delivery-notes', [DeliveryNoteController::class, 'store'])->name('delivery_notes.store');

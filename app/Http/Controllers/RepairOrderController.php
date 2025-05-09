@@ -1,0 +1,195 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Inertia\Inertia;
+use App\Models\RepairOrder;
+use App\Models\Repair;
+use App\Models\Client;
+use App\Models\Vehicle;
+use App\Models\RepairType;
+use App\Models\RepairTypeStep;
+use App\Mail\RepairStatusNotification;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+
+class RepairOrderController extends Controller
+{
+    public function index()
+    {
+        return Inertia::render('RepairOrders/Index', [
+            'repair_orders' => RepairOrder::with(['client', 'repairs.vehicle', 'repairs.repairType', 'createdBy'])->get(),
+            'clients' => Client::all(),
+            'vehicles' => Vehicle::with('client')->get(),
+            'repair_types' => RepairType::all(),
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'client_id' => 'required|exists:clients,id',
+            'vehicle_id' => 'required|exists:vehicles,id',
+            'observations' => 'nullable|string',
+            'send_email' => 'boolean',
+            'repairs' => 'required|array|min:1',
+            'repairs.*.repair_type_id' => 'required|exists:repair_types,id',
+            'repairs.*.observations' => 'nullable|string',
+        ]);
+
+        try {
+            DB::beginTransaction();
+            
+            $repairOrder = new RepairOrder();
+            $repairOrder->client_id = $request->client_id;
+            $repairOrder->observations = $request->observations;
+            $repairOrder->status = 'reception';
+            $repairOrder->created_by = Auth::id();
+            $repairOrder->save();
+
+            $vehicle = Vehicle::find($request->vehicle_id);
+            if ($vehicle && $vehicle->client_id == $request->client_id) {
+                foreach ($request->repairs as $repairData) {
+                    $repair = new Repair();
+                    $repair->vehicle_id = $request->vehicle_id;
+                    $repair->repair_type_id = $repairData['repair_type_id'];
+                    $repair->observations = $repairData['observations'];
+                    $repair->started_at = now();
+                    $repair->tracking_token = Str::uuid();
+                    $repair->repair_order_id = $repairOrder->id;
+                    $repair->save();
+                    
+                    if ($request->send_email && $vehicle->client && $vehicle->client->email && !isset($notificationSent)) {
+                        try {
+                            Mail::to($vehicle->client->email)
+                                ->send(new RepairStatusNotification($repair));
+                            $notificationSent = true;
+                        } catch (\Exception $e) {
+                            \Log::error('Failed to send email notification: ' . $e->getMessage());
+                        }
+                    }
+                }
+            }
+            
+            DB::commit();
+            return Redirect::route('repair-orders.index');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error creating repair order: ' . $e->getMessage());
+            return Redirect::route('repair-orders.index')->with('error', 'Error al crear la orden de reparación: ' . $e->getMessage());
+        }
+    }
+
+    public function update(Request $request, RepairOrder $repairOrder)
+    {
+        $request->validate([
+            'client_id' => 'required|exists:clients,id',
+            'vehicle_id' => 'required|exists:vehicles,id',
+            'observations' => 'nullable|string',
+            'status' => 'required|in:reception,diagnosing,in_repair,finished',
+            'send_email' => 'boolean',
+            'repairs' => 'required|array|min:1',
+            'repairs.*.repair_type_id' => 'required|exists:repair_types,id',
+            'repairs.*.observations' => 'nullable|string',
+        ]);
+
+        try {
+            DB::beginTransaction();
+            
+            $oldStatus = $repairOrder->status;
+            $newStatus = $request->status;
+            
+            $repairOrder->client_id = $request->client_id;
+            $repairOrder->observations = $request->observations;
+            $repairOrder->status = $newStatus;
+            
+            if ($newStatus === 'finished' && $oldStatus !== 'finished') {
+                $repairOrder->completed_at = now();
+                
+                foreach ($repairOrder->repairs as $repair) {
+                    $repair->completed_at = now();
+                    $repair->save();
+                }
+                
+                if ($request->send_email && $repairOrder->client && $repairOrder->client->email) {
+                    $firstRepair = $repairOrder->repairs->first();
+                    if ($firstRepair) {
+                        try {
+                            Mail::to($repairOrder->client->email)
+                                ->send(new RepairStatusNotification($firstRepair, true));
+                        } catch (\Exception $e) {
+                            \Log::error('Failed to send completion email: ' . $e->getMessage());
+                        }
+                    }
+                }
+            } else if ($request->send_email && $oldStatus !== $newStatus) {
+                if ($repairOrder->client && $repairOrder->client->email) {
+                    $firstRepair = $repairOrder->repairs->first();
+                    if ($firstRepair) {
+                        try {
+                            Mail::to($repairOrder->client->email)
+                                ->send(new RepairStatusNotification($firstRepair, false));
+                        } catch (\Exception $e) {
+                            \Log::error('Failed to send status update email: ' . $e->getMessage());
+                        }
+                    }
+                }
+            }
+            
+            $repairOrder->save();
+            
+            $vehicle = Vehicle::find($request->vehicle_id);
+            if ($vehicle && $vehicle->client_id == $request->client_id) {
+                $existingRepairs = Repair::where('repair_order_id', $repairOrder->id)
+                    ->where('vehicle_id', $request->vehicle_id)
+                    ->get()
+                    ->keyBy('id');
+                
+                $processedRepairIds = [];
+                
+                foreach ($request->repairs as $repairData) {
+                    if (isset($repairData['id']) && isset($existingRepairs[$repairData['id']])) {
+                        $repair = $existingRepairs[$repairData['id']];
+                        $repair->repair_type_id = $repairData['repair_type_id'];
+                        $repair->observations = $repairData['observations'];
+                        $repair->save();
+                        
+                        $processedRepairIds[] = $repair->id;
+                    } else {
+                        $repair = new Repair();
+                        $repair->vehicle_id = $request->vehicle_id;
+                        $repair->repair_type_id = $repairData['repair_type_id'];
+                        $repair->observations = $repairData['observations'];
+                        $repair->started_at = now();
+                        $repair->tracking_token = Str::uuid();
+                        $repair->repair_order_id = $repairOrder->id;
+                        $repair->save();
+                        
+                        $processedRepairIds[] = $repair->id;
+                    }
+                }
+            }
+            
+            DB::commit();
+            return Redirect::route('repair-orders.index');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error updating repair order: ' . $e->getMessage());
+            return Redirect::route('repair-orders.index')->with('error', 'Error al actualizar la orden de reparación: ' . $e->getMessage());
+        }
+    }
+
+    public function destroy(RepairOrder $repairOrder)
+    {
+        try {
+            $repairOrder->delete();
+            return Redirect::route('repair-orders.index');
+        } catch (\Exception $e) {
+            return Redirect::route('repair-orders.index')->with('error', 'No se pudo eliminar la orden de reparación.');
+        }
+    }
+} 
