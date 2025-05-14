@@ -9,6 +9,7 @@ use App\Models\RepairType;
 use App\Models\RepairTypeStep;
 use App\Models\Client;
 use App\Models\DeliveryNote;
+use App\Models\RepairOrder;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
@@ -49,20 +50,44 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        for ($i = 0; $i < 20; $i++) {
-            $repairType = $repairTypes[array_rand($repairTypes)];
-            $vehicle = Vehicle::inRandomOrder()->first();
+        $clients = Client::all();
+        $user = User::first() ?? User::factory()->create();
+
+        for ($i = 0; $i < 10; $i++) {
+            $client = $clients->random();
             
-            $steps = RepairTypeStep::where('repair_type_id', $repairType->id)->get();
-            $randomStep = $steps->random();
-            
-            Repair::create([
-                'repair_type_id' => $repairType->id,
-                'vehicle_id' => $vehicle->id,
-                'step_id' => $randomStep->id,
+            $repairOrder = RepairOrder::create([
+                'client_id' => $client->id,
                 'observations' => fake()->paragraph(),
-                'started_at' => Carbon::now()->subDays(rand(0, 30))->toDateString()
+                'status' => fake()->randomElement(['reception', 'in_repair', 'finished']),
+                'created_by' => $user->id
             ]);
+            
+            if ($repairOrder->status === 'finished') {
+                $repairOrder->completed_at = Carbon::now();
+                $repairOrder->save();
+            }
+            
+            $repairCount = rand(1, 3);
+            for ($j = 0; $j < $repairCount; $j++) {
+                $repairType = $repairTypes[array_rand($repairTypes)];
+                $vehicle = Vehicle::where('client_id', $client->id)->inRandomOrder()->first() 
+                    ?? Vehicle::factory()->create(['client_id' => $client->id]);
+                
+                $repair = Repair::create([
+                    'repair_type_id' => $repairType->id,
+                    'vehicle_id' => $vehicle->id,
+                    'repair_order_id' => $repairOrder->id,
+                    'observations' => fake()->paragraph(),
+                    'started_at' => Carbon::now()->subDays(rand(0, 30))->toDateString(),
+                    'tracking_token' => \Illuminate\Support\Str::uuid()
+                ]);
+                
+                if ($repairOrder->status === 'finished') {
+                    $repair->completed_at = Carbon::now();
+                    $repair->save();
+                }
+            }
         }
 
         DeliveryNote::factory(10)->create([
