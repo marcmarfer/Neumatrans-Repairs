@@ -119,8 +119,8 @@ watch(() => form.vehicle_id, (newVehicleId) => {
   if (newVehicleId) {
     const vehicle = props.vehicles.find(v => v.id.toString() === newVehicleId.toString());
     if (vehicle && vehicle.client_id) {
-      filteredRepairOrders.value = props.repair_orders.filter(ro => 
-        ro.client_id === vehicle.client_id
+      filteredRepairOrders.value = props.repair_orders.filter(repairOrder => 
+        repairOrder.client_id === vehicle.client_id && repairOrder.status !== 'finished'
       );
       
       if (form.repair_order_id && !filteredRepairOrders.value.some(ro => ro.id.toString() === form.repair_order_id.toString())) {
@@ -209,8 +209,12 @@ function editRepair(repair) {
   if (repair.vehicle_id) {
     const vehicle = props.vehicles.find(v => v.id === repair.vehicle_id);
     if (vehicle && vehicle.client_id) {
-      filteredRepairOrders.value = props.repair_orders.filter(ro => 
-        ro.client_id === vehicle.client_id
+      const currentOrder = props.repair_orders.find(repairOrder => repairOrder.id.toString() === form.repair_order_id);
+      filteredRepairOrders.value = props.repair_orders.filter(repairOrder => 
+        repairOrder.client_id === vehicle.client_id && (
+          repairOrder.status !== 'finished' || 
+          (currentOrder && repairOrder.id === currentOrder.id)
+        )
       );
     }
   }

@@ -107,15 +107,15 @@ const formatDate = (dateString) => {
             <p class="text-gray-700">
               Puede pasar por nuestro taller en horario de atención:
               <br />
-              <span class="font-semibold">Lunes a Viernes:</span> 9:00 - 19:00
+              <span class="font-semibold">Lunes a Viernes:</span> 8:30 - 13:30
               <br />
-              <span class="font-semibold">Sábados:</span> 9:00 - 13:00
+              <span class="font-semibold">Sábados:</span> 15:30 - 19:30
             </p>
           </div>
 
           <div class="border-t border-gray-200 pt-4 text-sm text-gray-500 text-center">
             <p>Para cualquier consulta, por favor contacte con nosotros:</p>
-            <p class="font-semibold">Teléfono: 666 666 666 | Email: jm@neumatrans.es</p>
+            <p class="font-semibold">Teléfono: 93 353 98 18 | Email: info@neumatrans.es</p>
           </div>
         </div>
       </div>

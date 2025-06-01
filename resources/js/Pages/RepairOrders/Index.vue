@@ -306,6 +306,10 @@ function deleteRepairOrder() {
     });
   }
 }
+
+function isOrderCompleted() {
+  return form.status === 'finished';
+}
 </script>
 
 <template>
@@ -496,6 +500,7 @@ function deleteRepairOrder() {
                   label-field="name"
                   required
                   :error="form.errors.status"
+                  :disabled="form.status === 'finished'"
                 />
               </div>
             </div>
@@ -504,14 +509,24 @@ function deleteRepairOrder() {
             <div v-if="form.vehicle_id" class="bg-gray-50 p-4 rounded-lg">
               <div class="flex justify-between items-center mb-3">
                 <h3 class="font-bold text-lg">Reparaciones para {{ selectedVehicle?.brand }} {{ selectedVehicle?.model }} ({{ selectedVehicle?.plate_number }})</h3>
-                <DarkButton type="button" @click="addRepair" class="text-sm py-1 px-2">+ Añadir Reparación</DarkButton>
+                <DarkButton 
+                  v-if="!isOrderCompleted()" 
+                  type="button" 
+                  @click="addRepair" 
+                  class="text-sm py-1 px-2"
+                >
+                  + Añadir Reparación
+                </DarkButton>
+                <span v-else class="text-sm text-gray-500 italic">
+                  No se pueden añadir reparaciones a una orden completada
+                </span>
               </div>
               
               <div v-for="(repair, index) in form.repairs" :key="index" class="p-3 bg-white rounded-lg mb-3 border border-gray-200">
                 <div class="flex justify-between items-center mb-2">
                   <h4 class="font-semibold">Reparación #{{ index + 1 }}</h4>
                   <button 
-                    v-if="form.repairs.length > 1" 
+                    v-if="form.repairs.length > 1 && !isOrderCompleted()" 
                     type="button" 
                     @click="removeRepair(index)" 
                     class="text-red-500 hover:text-red-700"
@@ -533,6 +548,7 @@ function deleteRepairOrder() {
                     placeholder="Seleccione un tipo de reparación"
                     required
                     :error="form.errors[`repairs.${index}.repair_type_id`]"
+                    :disabled="isOrderCompleted()"
                   />
                   
                   <DefaultInput
@@ -542,6 +558,7 @@ function deleteRepairOrder() {
                     :error="form.errors[`repairs.${index}.observations`]"
                     isTextarea
                     :rows="2"
+                    :disabled="isOrderCompleted()"
                   />
                 </div>
               </div>
@@ -549,7 +566,7 @@ function deleteRepairOrder() {
           </div>
 
           <div class="mt-6 flex justify-end space-x-3">
-            <div class="flex-grow">
+            <div v-if="!isEditing" class="flex-grow">
               <label class="inline-flex items-center">
                 <input 
                   type="checkbox" 

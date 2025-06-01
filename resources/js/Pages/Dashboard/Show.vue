@@ -20,7 +20,7 @@ const logout = () => {
 
 <template>
 
-    <Head title="Dashboard" />
+    <Head title="Panel de Control" />
 
     <div class="min-h-screen flex flex-col p-[50px] py-[75px] sm:px-6 lg:px-8">
         <div class="max-w-screen-2xl w-full">

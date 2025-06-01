@@ -86,12 +86,20 @@ class RepairOrderController extends Controller
 
     public function update(Request $request, RepairOrder $repairOrder)
     {
+        if ($repairOrder->status === 'finished' && $request->has('repairs')) {
+            $existingRepairIds = $repairOrder->repairs->pluck('id')->toArray();
+            $requestRepairIds = collect($request->repairs)->whereNotNull('id')->pluck('id')->toArray();
+            
+            if (count($request->repairs) > count($existingRepairIds)) {
+                return Redirect::route('repair-orders.index')->with('error', 'No se pueden añadir reparaciones a una orden completada.');
+            }
+        }
+
         $request->validate([
             'client_id' => 'required|exists:clients,id',
             'vehicle_id' => 'required|exists:vehicles,id',
             'observations' => 'nullable|string',
             'status' => 'required|in:reception,diagnosing,in_repair,finished',
-            'send_email' => 'boolean',
             'repairs' => 'required|array|min:1',
             'repairs.*.repair_type_id' => 'required|exists:repair_types,id',
             'repairs.*.observations' => 'nullable|string',
@@ -111,11 +119,13 @@ class RepairOrderController extends Controller
                 $repairOrder->completed_at = now();
                 
                 foreach ($repairOrder->repairs as $repair) {
-                    $repair->completed_at = now();
-                    $repair->save();
+                    if (!$repair->completed_at) {
+                        $repair->completed_at = now();
+                        $repair->save();
+                    }
                 }
                 
-                if ($request->send_email && $repairOrder->client && $repairOrder->client->email) {
+                if ($repairOrder->client && $repairOrder->client->email) {
                     $firstRepair = $repairOrder->repairs->first();
                     if ($firstRepair) {
                         try {
@@ -123,18 +133,6 @@ class RepairOrderController extends Controller
                                 ->send(new RepairStatusNotification($firstRepair, true));
                         } catch (\Exception $e) {
                             \Log::error('Failed to send completion email: ' . $e->getMessage());
-                        }
-                    }
-                }
-            } else if ($request->send_email && $oldStatus !== $newStatus) {
-                if ($repairOrder->client && $repairOrder->client->email) {
-                    $firstRepair = $repairOrder->repairs->first();
-                    if ($firstRepair) {
-                        try {
-                            Mail::to($repairOrder->client->email)
-                                ->send(new RepairStatusNotification($firstRepair, false));
-                        } catch (\Exception $e) {
-                            \Log::error('Failed to send status update email: ' . $e->getMessage());
                         }
                     }
                 }
@@ -153,23 +151,26 @@ class RepairOrderController extends Controller
                 
                 foreach ($request->repairs as $repairData) {
                     if (isset($repairData['id']) && isset($existingRepairs[$repairData['id']])) {
-                        $repair = $existingRepairs[$repairData['id']];
-                        $repair->repair_type_id = $repairData['repair_type_id'];
-                        $repair->observations = $repairData['observations'];
-                        $repair->save();
-                        
-                        $processedRepairIds[] = $repair->id;
+                        if ($repairOrder->status !== 'finished') {
+                            $repair = $existingRepairs[$repairData['id']];
+                            $repair->repair_type_id = $repairData['repair_type_id'];
+                            $repair->observations = $repairData['observations'];
+                            $repair->save();
+                        }
+                        $processedRepairIds[] = $repairData['id'];
                     } else {
-                        $repair = new Repair();
-                        $repair->vehicle_id = $request->vehicle_id;
-                        $repair->repair_type_id = $repairData['repair_type_id'];
-                        $repair->observations = $repairData['observations'];
-                        $repair->started_at = now();
-                        $repair->tracking_token = Str::uuid();
-                        $repair->repair_order_id = $repairOrder->id;
-                        $repair->save();
-                        
-                        $processedRepairIds[] = $repair->id;
+                        if ($repairOrder->status !== 'finished') {
+                            $repair = new Repair();
+                            $repair->vehicle_id = $request->vehicle_id;
+                            $repair->repair_type_id = $repairData['repair_type_id'];
+                            $repair->observations = $repairData['observations'];
+                            $repair->started_at = now();
+                            $repair->tracking_token = Str::uuid();
+                            $repair->repair_order_id = $repairOrder->id;
+                            $repair->save();
+                            
+                            $processedRepairIds[] = $repair->id;
+                        }
                     }
                 }
             }

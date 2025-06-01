@@ -36,6 +36,11 @@ class RepairController extends Controller
             'repair_order_id' => 'required|exists:repair_orders,id',
         ]);
 
+        $repairOrder = RepairOrder::find($request->repair_order_id);
+        if ($repairOrder && $repairOrder->status === 'finished') {
+            return Redirect::route('repairs.index')->with('error', 'No se puede añadir una reparación a una orden completada.');
+        }
+
         $repair = new Repair();
         $repair->vehicle_id = $request->vehicle_id;
         $repair->repair_type_id = $request->repair_type_id;
@@ -44,17 +49,6 @@ class RepairController extends Controller
         $repair->repair_order_id = $request->repair_order_id;
         $repair->tracking_token = Str::uuid();
         $repair->save();
-
-        $repair->load(['vehicle.client', 'repairType']);
-
-        if ($repair->vehicle->client->email) {
-            try {
-                Mail::to($repair->vehicle->client->email)
-                    ->send(new RepairStatusNotification($repair));
-            } catch (\Exception $e) {
-                \Log::error('Failed to send email notification: ' . $e->getMessage());
-            }
-        }
 
         return Redirect::route('repairs.index');
     }
@@ -68,6 +62,13 @@ class RepairController extends Controller
             'started_at' => 'required|date',
             'repair_order_id' => 'required|exists:repair_orders,id',
         ]);
+
+        if ($request->repair_order_id != $repair->repair_order_id) {
+            $newRepairOrder = RepairOrder::find($request->repair_order_id);
+            if ($newRepairOrder && $newRepairOrder->status === 'finished') {
+                return Redirect::route('repairs.index')->with('error', 'No se puede asignar una reparación a una orden completada.');
+            }
+        }
         
         $repair->vehicle_id = $request->vehicle_id;
         $repair->repair_type_id = $request->repair_type_id;
