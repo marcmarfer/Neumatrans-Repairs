@@ -4,6 +4,8 @@ namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Client;
+use App\Models\Brand;
+use App\Models\VehicleModel;
 
 class VehicleFactory extends Factory
 {
@@ -12,8 +14,8 @@ class VehicleFactory extends Factory
         return [
             'client_id' => Client::inRandomOrder()->value('id') ?? Client::factory(),
             'plate_number' => strtoupper($this->faker->unique()->bothify('??###??')),
-            'brand' => $this->faker->company,
-            'model' => $this->faker->word,
+            'brand_id' => Brand::inRandomOrder()->value('id') ?? Brand::factory(),
+            'model_id' => VehicleModel::inRandomOrder()->value('id') ?? VehicleModel::factory(),
             'VIN' => strtoupper($this->faker->unique()->bothify('?????????????????')),
             'motor_type' => $this->faker->word,
             'added_at' => $this->faker->date(),
