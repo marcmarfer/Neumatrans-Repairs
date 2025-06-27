@@ -6,18 +6,15 @@ import DateRangeSearch from "@/Components/DateRangeSearch.vue";
 import DarkButton from "@/Components/DarkButton.vue";
 import LightButton from "@/Components/LightButton.vue";
 import DefaultInput from "@/Components/DefaultInput.vue";
-import DefaultSelect from "@/Components/DefaultSelect.vue";
 import GoBackButton from "@/Components/GoBackButton.vue";
 import DeleteButton from "@/Components/DeleteButton.vue";
+import SearchableSelect from "@/Components/SearchableSelect.vue";
+import DefaultSelect from "@/Components/DefaultSelect.vue";
 const props = defineProps({
-  vehicles: {
-    type: Array,
-    required: true,
-  },
-  clients: {
-    type: Array,
-    required: true,
-  },
+  vehicles: Array,
+  clients: Array,
+  brands: Array,
+  models: Array,
 });
 
 const formatDate = (dateString) => {
@@ -34,8 +31,8 @@ const columns = [
   { key: "id", label: "ID" },
   { key: "client.name", label: "Cliente" },
   { key: "plate_number", label: "Matrícula" },
-  { key: "brand", label: "Marca" },
-  { key: "model", label: "Modelo" },
+  { key: "brand.name", label: "Marca" },
+  { key: "model.name", label: "Modelo" },
   { key: "VIN", label: "VIN" },
   { key: "motor_type", label: "Tipo de Motor" },
   { 
@@ -61,12 +58,18 @@ const form = useForm({
   id: "",
   client_id: "",
   plate_number: "",
-  brand: "",
-  model: "",
+  brand_id: "",
+  model_id: "",
   VIN: "",
   motor_type: "",
   added_at: today,
 });
+
+function filteredModels() {
+  return form.brand_id
+    ? props.models.filter((m) => m.brand_id === form.brand_id)
+    : [];
+}
 
 function filterVehicles() {
   let filteredVehicles = props.vehicles;
@@ -118,8 +121,8 @@ function editVehicle(vehicle) {
   form.id = vehicle.id;
   form.client_id = vehicle.client_id.toString();
   form.plate_number = vehicle.plate_number;
-  form.brand = vehicle.brand;
-  form.model = vehicle.model;
+  form.brand_id = vehicle.brand_id.toString();
+  form.model_id = vehicle.model_id.toString();
   form.VIN = vehicle.VIN;
   form.motor_type = vehicle.motor_type;
   form.added_at = vehicle.added_at;
@@ -167,6 +170,66 @@ function deleteVehicle() {
       },
     });
   }
+}
+
+function formatPlateNumber(event) {
+  let value = event.target.value.toUpperCase();
+  value = value.replace(/[^A-Z0-9]/g, '');
+  if (value.length > 8) {
+    value = value.substring(0, 8);
+  }
+  form.plate_number = value;
+}
+
+function formatVIN(event) {
+  let value = event.target.value.toUpperCase();
+  value = value.replace(/[^A-HJ-NPR-Z0-9]/g, '');
+  if (value.length > 17) {
+    value = value.substring(0, 17);
+  }
+  form.VIN = value;
+}
+
+const newBrandForm = useForm({ name: '' });
+const isNewBrandModalOpen = ref(false);
+const newModelForm = useForm({ brand_id: '', name: '' });
+const isNewModelModalOpen = ref(false);
+
+function openNewBrandModal() {
+  newBrandForm.reset();
+  isNewBrandModalOpen.value = true;
+}
+
+function closeNewBrandModal() {
+  isNewBrandModalOpen.value = false;
+}
+
+function submitNewBrandForm() {
+  newBrandForm.post(route('brands.store'), {
+    onSuccess: () => {
+      closeNewBrandModal();
+      router.reload();
+    },
+  });
+}
+
+function openNewModelModal() {
+  newModelForm.reset();
+  newModelForm.brand_id = form.brand_id;
+  isNewModelModalOpen.value = true;
+}
+
+function closeNewModelModal() {
+  isNewModelModalOpen.value = false;
+}
+
+function submitNewModelForm() {
+  newModelForm.post(route('models.store'), {
+    onSuccess: () => {
+      closeNewModelModal();
+      router.reload();
+    },
+  });
 }
 </script>
 
@@ -230,56 +293,104 @@ function deleteVehicle() {
 
         <form @submit.prevent="submitForm">
           <div class="space-y-4">
-            <DefaultSelect
+            <SearchableSelect
               id="client_id"
               v-model="form.client_id"
               label="Cliente"
               :options="clients"
               value-field="id"
+              label-field="name"
               placeholder="Seleccione un cliente"
+              search-placeholder="Buscar cliente por nombre o DNI..."
               required
               :error="form.errors.client_id"
             >
               <template #option="{ option }">
                 {{ option.name }} - {{ option.DNI }}
               </template>
-            </DefaultSelect>
+            </SearchableSelect>
 
             <DefaultInput
               id="plate_number"
               v-model="form.plate_number"
               label="Matrícula"
+              placeholder="Ej: 1234ABC"
+              pattern="[0-9]{4}[A-Za-z]{3}|[A-Za-z]{1,2}[0-9]{4}[A-Za-z]{2,3}"
+              title="Formato: 1234ABC o M1234BC"
+              maxlength="8"
               required
               :error="form.errors.plate_number"
+              @input="formatPlateNumber"
             />
 
-            <DefaultInput
-              id="brand"
-              v-model="form.brand"
-              label="Marca"
-              required
-              :error="form.errors.brand"
-            />
+            <div>
+              <label for="brand_id" class="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+              <div class="flex space-x-2">
+                <select
+                  id="brand_id"
+                  v-model="form.brand_id"
+                  class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                  required
+                >
+                  <option value="" disabled>Selecciona una marca</option>
+                  <option v-for="brand in props.brands" :key="brand.id" :value="brand.id">{{ brand.name }}</option>
+                </select>
+                <button
+                  type="button"
+                  @click="openNewBrandModal"
+                  class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Nueva
+                </button>
+              </div>
+              <div v-if="form.errors.brand_id" class="text-sm text-red-600 mt-1">{{ form.errors.brand_id }}</div>
+            </div>
 
-            <DefaultInput
-              id="model"
-              v-model="form.model"
-              label="Modelo"
-              required
-              :error="form.errors.model"
-            />
+            <div>
+              <label for="model_id" class="block text-sm font-medium text-gray-700 mb-1">Modelo</label>
+              <div class="flex space-x-2">
+                <select
+                  id="model_id"
+                  v-model="form.model_id"
+                  :disabled="!form.brand_id"
+                  class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                  required
+                >
+                  <option value="" disabled>Selecciona un modelo</option>
+                  <option v-for="m in filteredModels()" :key="m.id" :value="m.id">{{ m.name }}</option>
+                </select>
+                <button
+                  type="button"
+                  @click="openNewModelModal"
+                  class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Nueva
+                </button>
+              </div>
+              <div v-if="form.errors.model_id" class="text-sm text-red-600 mt-1">{{ form.errors.model_id }}</div>
+            </div>
 
             <DefaultInput
               id="VIN"
               v-model="form.VIN"
-              label="VIN"
+              label="VIN (Opcional)"
+              placeholder="17 caracteres alfanuméricos"
+              pattern="[A-HJ-NPR-Z0-9]{17}"
+              title="17 caracteres alfanuméricos (sin I, O, Q)"
+              maxlength="17"
+              minlength="17"
               :error="form.errors.VIN"
+              @input="formatVIN"
             />
 
             <DefaultInput
               id="motor_type"
               v-model="form.motor_type"
-              label="Tipo de Motor"
+              label="Tipo de Motor (Opcional)"
+              placeholder="Ej: 1.6 TDI, 2.0 TSI, Híbrido"
+              pattern="[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9\s\-\.\,\/\(\)]+"
+              title="Letras, números y caracteres especiales básicos"
+              maxlength="100"
               :error="form.errors.motor_type"
             />
 
@@ -288,6 +399,8 @@ function deleteVehicle() {
               v-model="form.added_at"
               type="date"
               label="Fecha de Alta"
+              :max="today"
+              required
               :error="form.errors.added_at"
             />
           </div>
@@ -336,6 +449,72 @@ function deleteVehicle() {
           <LightButton type="button" @click="cancelDelete">Cancelar</LightButton>
           <DeleteButton type="button" @click="deleteVehicle">Eliminar</DeleteButton>
         </div>
+      </div>
+    </div>
+
+    <!-- Modal Añadir Nueva Marca -->
+    <div v-if="isNewBrandModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
+      <div class="fixed inset-0 bg-black opacity-50" @click="closeNewBrandModal"></div>
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold">Añadir Nueva Marca</h2>
+          <button @click="closeNewBrandModal" class="text-gray-500 hover:text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <form @submit.prevent="submitNewBrandForm">
+          <DefaultInput
+            id="brand_name"
+            v-model="newBrandForm.name"
+            label="Nombre de la Marca"
+            :error="newBrandForm.errors.name"
+            required
+          />
+          <div class="mt-6 flex justify-end space-x-3">
+            <LightButton type="button" @click="closeNewBrandModal">Cancelar</LightButton>
+            <DarkButton type="submit" :disabled="newBrandForm.processing">Guardar</DarkButton>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Añadir Nuevo Modelo -->
+    <div v-if="isNewModelModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
+      <div class="fixed inset-0 bg-black opacity-50" @click="closeNewModelModal"></div>
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold">Añadir Nuevo Modelo</h2>
+          <button @click="closeNewModelModal" class="text-gray-500 hover:text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <form @submit.prevent="submitNewModelForm">
+          <DefaultSelect
+            id="new_model_brand"
+            v-model="newModelForm.brand_id"
+            label="Marca"
+            :options="props.brands"
+            value-field="id"
+            label-field="name"
+            :error="newModelForm.errors.brand_id"
+            required
+          />
+          <DefaultInput
+            id="model_name"
+            v-model="newModelForm.name"
+            label="Nombre del Modelo"
+            :error="newModelForm.errors.name"
+            required
+          />
+          <div class="mt-6 flex justify-end space-x-3">
+            <LightButton type="button" @click="closeNewModelModal">Cancelar</LightButton>
+            <DarkButton type="submit" :disabled="newModelForm.processing">Guardar</DarkButton>
+          </div>
+        </form>
       </div>
     </div>
   </div>

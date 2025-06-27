@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 use Inertia\Inertia;
 use App\Models\Vehicle;
 use App\Models\Client;
+use App\Models\Brand;
+use App\Models\VehicleModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 
@@ -12,8 +14,10 @@ class VehicleController extends Controller
     public function index()
     {
         return Inertia::render('Vehicles/Index', [
-            'vehicles' => Vehicle::with('client')->get(),
-            'clients' => Client::all()
+            'vehicles' => Vehicle::with(['client', 'brand', 'model'])->get(),
+            'clients' => Client::all(),
+            'brands' => Brand::all(),
+            'models' => VehicleModel::all(),
         ]);
     }
 
@@ -21,20 +25,35 @@ class VehicleController extends Controller
     {
         $request->validate([
             'client_id' => 'required|exists:clients,id',
-            'plate_number' => 'required|string|unique:vehicles,plate_number',
-            'brand' => 'required|string|max:255',
-            'model' => 'required|string|max:255',
-            'VIN' => 'nullable|string|unique:vehicles,VIN',
-            'motor_type' => 'nullable|string|max:100',
-            'added_at' => 'required|date',
+            'plate_number' => [
+                'required',
+                'string',
+                'unique:vehicles,plate_number',
+            ],
+            'brand_id' => 'required|exists:brands,id',
+            'model_id' => 'required|exists:vehicle_models,id',
+            'VIN' => [
+                'nullable',
+                'string',
+                'unique:vehicles,VIN',
+                'regex:/^[A-HJ-NPR-Z0-9]{17}$/',
+            ],
+            'motor_type' => 'nullable|string|max:100|regex:/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9\s\-\.\,\/\(\)]+$/',
+            'added_at' => 'required|date|before_or_equal:today',
+        ], [
+            'plate_number.unique' => 'Esta matrícula ya está registrada.',
+            'VIN.regex' => 'El VIN debe tener exactamente 17 caracteres alfanuméricos (sin I, O, Q).',
+            'VIN.unique' => 'Este VIN ya está registrado.',
+            'motor_type.regex' => 'El tipo de motor contiene caracteres no válidos.',
+            'added_at.before_or_equal' => 'La fecha de alta no puede ser futura.',
         ]);
 
         $vehicle = new Vehicle();
         $vehicle->client_id = $request->client_id;
-        $vehicle->plate_number = $request->plate_number;
-        $vehicle->brand = $request->brand;
-        $vehicle->model = $request->model;
-        $vehicle->VIN = $request->VIN;
+        $vehicle->plate_number = strtoupper($request->plate_number);
+        $vehicle->brand_id = $request->brand_id;
+        $vehicle->model_id = $request->model_id;
+        $vehicle->VIN = $request->VIN ? strtoupper($request->VIN) : null;
         $vehicle->motor_type = $request->motor_type;
         $vehicle->added_at = $request->added_at;
         $vehicle->save();
@@ -46,19 +65,34 @@ class VehicleController extends Controller
     {
         $request->validate([
             'client_id' => 'required|exists:clients,id',
-            'plate_number' => 'required|string|unique:vehicles,plate_number,' . $vehicle->id,
-            'brand' => 'required|string|max:255',
-            'model' => 'required|string|max:255',
-            'VIN' => 'nullable|string|unique:vehicles,VIN,' . $vehicle->id,
-            'motor_type' => 'nullable|string|max:100',
-            'added_at' => 'required|date',
+            'plate_number' => [
+                'required',
+                'string',
+                'unique:vehicles,plate_number,' . $vehicle->id,
+            ],
+            'brand_id' => 'required|exists:brands,id',
+            'model_id' => 'required|exists:vehicle_models,id',
+            'VIN' => [
+                'nullable',
+                'string',
+                'unique:vehicles,VIN,' . $vehicle->id,
+                'regex:/^[A-HJ-NPR-Z0-9]{17}$/',
+            ],
+            'motor_type' => 'nullable|string|max:100|regex:/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9\s\-\.\,\/\(\)]+$/',
+            'added_at' => 'required|date|before_or_equal:today',
+        ], [
+            'plate_number.unique' => 'Esta matrícula ya está registrada.',
+            'VIN.regex' => 'El VIN debe tener exactamente 17 caracteres alfanuméricos (sin I, O, Q).',
+            'VIN.unique' => 'Este VIN ya está registrado.',
+            'motor_type.regex' => 'El tipo de motor contiene caracteres no válidos.',
+            'added_at.before_or_equal' => 'La fecha de alta no puede ser futura.',
         ]);
 
         $vehicle->client_id = $request->client_id;
-        $vehicle->plate_number = $request->plate_number;
-        $vehicle->brand = $request->brand;
-        $vehicle->model = $request->model;
-        $vehicle->VIN = $request->VIN;
+        $vehicle->plate_number = strtoupper($request->plate_number);
+        $vehicle->brand_id = $request->brand_id;
+        $vehicle->model_id = $request->model_id;
+        $vehicle->VIN = $request->VIN ? strtoupper($request->VIN) : null;
         $vehicle->motor_type = $request->motor_type;
         $vehicle->added_at = $request->added_at;
         $vehicle->save();

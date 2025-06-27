@@ -6,7 +6,7 @@ import DateRangeSearch from "@/Components/DateRangeSearch.vue";
 import DarkButton from "@/Components/DarkButton.vue";
 import LightButton from "@/Components/LightButton.vue";
 import DefaultInput from "@/Components/DefaultInput.vue";
-import DefaultSelect from "@/Components/DefaultSelect.vue";
+import SearchableSelect from "@/Components/SearchableSelect.vue";
 import GoBackButton from "@/Components/GoBackButton.vue";
 import DeleteButton from "@/Components/DeleteButton.vue";
 const props = defineProps({
@@ -398,13 +398,14 @@ function deleteRepair() {
 
         <form @submit.prevent="submitForm">
           <div class="space-y-4">
-            <DefaultSelect
+            <SearchableSelect
               id="vehicle_id"
               v-model="form.vehicle_id"
               label="Vehículo"
               :options="vehicles"
               value-field="id"
               placeholder="Seleccione un vehículo"
+              search-placeholder="Buscar por matrícula, marca o cliente..."
               required
               :error="form.errors.vehicle_id"
             >
@@ -413,15 +414,16 @@ function deleteRepair() {
                   option.client?.name
                 }})
               </template>
-            </DefaultSelect>
+            </SearchableSelect>
 
-            <DefaultSelect
+            <SearchableSelect
               id="repair_order_id"
               v-model="form.repair_order_id"
               label="Orden de Reparación"
               :options="filteredRepairOrders"
               value-field="id"
               placeholder="Seleccione una orden de reparación"
+              search-placeholder="Buscar por ID o cliente..."
               required
               :error="form.errors.repair_order_id"
               :disabled="!form.vehicle_id"
@@ -429,9 +431,9 @@ function deleteRepair() {
               <template #option="{ option }">
                 Orden #{{ option.id }} - {{ option.client?.name }}
               </template>
-            </DefaultSelect>
+            </SearchableSelect>
 
-            <DefaultSelect
+            <SearchableSelect
               id="repair_type_id"
               v-model="form.repair_type_id"
               label="Tipo de Reparación"
@@ -439,6 +441,7 @@ function deleteRepair() {
               value-field="id"
               label-field="name"
               placeholder="Seleccione un tipo de reparación"
+              search-placeholder="Buscar tipo de reparación..."
               required
               :error="form.errors.repair_type_id"
             />

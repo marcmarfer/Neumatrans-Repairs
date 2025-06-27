@@ -15,6 +15,8 @@ use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\InsightsController;
 use App\Http\Controllers\RepairTrackingController;
 use App\Http\Middleware\ProductionMiddleware;
+use App\Http\Controllers\BrandController;
+use App\Http\Controllers\VehicleModelController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [UserController::class, 'show'])->name('dashboard.show');
@@ -53,6 +55,8 @@ Route::delete('/delivery-notes/{deliveryNote}', [DeliveryNoteController::class, 
 
 Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
 Route::post('/families', [FamilyController::class, 'store'])->name('families.store');
+Route::post('/brands', [BrandController::class, 'store'])->name('brands.store');
+Route::post('/models', [VehicleModelController::class, 'store'])->name('models.store');
 
 Route::get('/insights', [InsightsController::class, 'index'])->name('insights.index');
 

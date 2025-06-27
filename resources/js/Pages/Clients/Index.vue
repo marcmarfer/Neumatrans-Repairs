@@ -8,6 +8,8 @@ import LightButton from "@/Components/LightButton.vue";
 import DefaultInput from "@/Components/DefaultInput.vue";
 import GoBackButton from "@/Components/GoBackButton.vue";
 import DeleteButton from "@/Components/DeleteButton.vue";
+import DNIInput from "@/Components/DNIInput.vue";
+import PhoneInput from "@/Components/PhoneInput.vue";
 
 const props = defineProps({
   clients: {
@@ -26,12 +28,19 @@ const formatDate = (dateString) => {
   });
 };
 
+const formatTelephone = (phoneString) => {
+  if (!phoneString) return '';
+  const digits = phoneString.replace(/\s+/g, '');
+  const match = digits.match(/^(\+\d{1,3})(\d+)$/);
+  return match ? `${match[1]} ${match[2]}` : digits;
+};
+
 const columns = [
   { key: "id", label: "ID" },
   { key: "DNI", label: "DNI" },
   { key: "name", label: "Nombre" },
   { key: "email", label: "Email" },
-  { key: "telephone", label: "Teléfono" },
+  { key: "telephone", label: "Teléfono", formatter: formatTelephone },
   { key: "city", label: "Ciudad" },
   { key: "postal_code", label: "Código Postal" },
   { 
@@ -68,7 +77,6 @@ const form = useForm({
 function filterClients() {
   let filteredClients = props.clients;
 
-  // Filter by date range
   if (dateRange.value.startDate || dateRange.value.endDate) {
     filteredClients = filteredClients.filter((client) => {
       const registeredDate = new Date(client.registered_at);
@@ -89,7 +97,6 @@ function filterClients() {
     });
   }
 
-  // Filter by search query (DNI or name)
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
     filteredClients = filteredClients.filter(
@@ -165,6 +172,15 @@ function deleteClient() {
     });
   }
 }
+
+function formatPostalCode(event) {
+  let value = event.target.value;
+  value = value.replace(/[^0-9]/g, '');
+  if (value.length > 5) {
+    value = value.substring(0, 5);
+  }
+  form.postal_code = value;
+}
 </script>
 
 <template>
@@ -227,7 +243,7 @@ function deleteClient() {
 
         <form @submit.prevent="submitForm">
           <div class="space-y-4">
-            <DefaultInput
+            <DNIInput
               id="dni"
               v-model="form.DNI"
               label="DNI"
@@ -239,6 +255,11 @@ function deleteClient() {
               id="name"
               v-model="form.name"
               label="Nombre"
+              placeholder="Nombre completo"
+              pattern="[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]+"
+              title="Solo letras y espacios"
+              maxlength="255"
+              minlength="2"
               required
               :error="form.errors.name"
             />
@@ -248,13 +269,14 @@ function deleteClient() {
               v-model="form.email"
               type="email"
               label="Email"
+              placeholder="correo@ejemplo.com"
+              maxlength="255"
               :error="form.errors.email"
             />
 
-            <DefaultInput
+            <PhoneInput
               id="telephone"
               v-model="form.telephone"
-              type="tel"
               label="Teléfono"
               required
               :error="form.errors.telephone"
@@ -263,15 +285,26 @@ function deleteClient() {
             <DefaultInput
               id="city"
               v-model="form.city"
-              label="Ciudad"
+              label="Ciudad (Opcional)"
+              placeholder="Ej: Madrid, Barcelona"
+              pattern="[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s\-\']+"
+              title="Solo letras, espacios, guiones y apostrofes"
+              maxlength="100"
+              minlength="2"
               :error="form.errors.city"
             />
 
             <DefaultInput
               id="postal_code"
               v-model="form.postal_code"
-              label="Código Postal"
+              label="Código Postal (Opcional)"
+              placeholder="Ej: 28001"
+              pattern="[0-9]{5}"
+              title="5 dígitos"
+              maxlength="5"
+              minlength="5"
               :error="form.errors.postal_code"
+              @input="formatPostalCode"
             />
 
             <DefaultInput
@@ -279,6 +312,8 @@ function deleteClient() {
               v-model="form.registered_at"
               type="date"
               label="Fecha de Registro"
+              :max="today"
+              required
               :error="form.errors.registered_at"
             />
           </div>

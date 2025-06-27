@@ -25,7 +25,7 @@ const logout = () => {
     <div class="min-h-screen flex flex-col p-[50px] py-[75px] sm:px-6 lg:px-8">
         <div class="max-w-screen-2xl w-full">
                 <h1 class="text-black text-2xl sm:text-3xl font-bold mb-12">
-                    Bienvenido a <span class="text-red-600">Neumatrans</span>, {{ props.user.name }}
+                    Bienvenido a <span class="text-red-600">NTC Car Service</span>, {{ props.user.name }}
                 </h1>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

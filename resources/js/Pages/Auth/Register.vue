@@ -22,7 +22,7 @@ const submit = () => {
     <div class="min-h-screen flex items-center justify-center bg-gray-100">
         <div class="w-96 p-4">
             <div class="text-center mb-8">
-                <h1 class="text-2xl font-bold text-gray-800">Neumatrans</h1>
+                <h1 class="text-2xl font-bold text-gray-800">NTC Car Service</h1>
                 <p class="text-gray-600 mt-2">Crea tu cuenta</p>
             </div>
 

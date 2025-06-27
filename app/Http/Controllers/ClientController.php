@@ -20,21 +20,49 @@ class ClientController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'DNI' => 'required|string|unique:clients,DNI',
-            'name' => 'required|string|max:255',
-            'email' => 'nullable|email|unique:clients,email',
-            'telephone' => 'required|string|max:15',
-            'city' => 'nullable|string|max:100',
-            'postal_code' => 'nullable|string|max:10',
-            'registered_at' => 'required|date',
+            'DNI' => [
+                'required',
+                'string',
+                'regex:/^[0-9]{8}[A-Za-z]$/',
+                'unique:clients,DNI',
+                function ($attribute, $value, $fail) {
+                    if (!$this->validateSpanishDNI($value)) {
+                        $fail('El DNI no es válido.');
+                    }
+                },
+            ],
+            'name' => 'required|string|min:2|max:255|regex:/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]+$/',
+            'email' => 'required|email|unique:clients,email|max:255',
+            'telephone' => [
+                'required',
+                'string',
+                'regex:/^(\+\d{1,4})\s*\d{6,15}$/',
+                function ($attribute, $value, $fail) {
+                    if (!$this->validateInternationalPhone($value)) {
+                        $fail($this->getPhoneValidationError($value));
+                    }
+                },
+            ],
+            'city' => 'nullable|string|min:2|max:100|regex:/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s\-\']+$/',
+            'postal_code' => 'nullable|string|regex:/^[0-9]{5}$/',
+            'registered_at' => 'required|date|before_or_equal:today',
+        ], [
+            'DNI.regex' => 'El DNI debe tener 8 dígitos seguidos de una letra.',
+            'DNI.unique' => 'Este DNI ya está registrado.',
+            'name.regex' => 'El nombre solo puede contener letras y espacios.',
+            'name.min' => 'El nombre debe tener al menos 2 caracteres.',
+            'telephone.regex' => 'El formato del teléfono no es válido.',
+            'city.regex' => 'La ciudad solo puede contener letras, espacios, guiones y apostrofes.',
+            'postal_code.regex' => 'El código postal debe tener exactamente 5 dígitos.',
+            'registered_at.before_or_equal' => 'La fecha de registro no puede ser futura.',
         ]);
 
         $client = new Client();
-        $client->DNI = $request->DNI;
-        $client->name = $request->name;
-        $client->email = $request->email;
-        $client->telephone = $request->telephone;
-        $client->city = $request->city;
+        $client->DNI = strtoupper($request->DNI);
+        $client->name = ucwords(strtolower($request->name));
+        $client->email = strtolower($request->email);
+        $client->telephone = $this->formatInternationalPhone($request->telephone);
+        $client->city = $request->city ? ucwords(strtolower($request->city)) : null;
         $client->postal_code = $request->postal_code;
         $client->registered_at = $request->registered_at;
         $client->save();
@@ -45,25 +73,258 @@ class ClientController extends Controller
     public function update(Request $request, Client $client)
     {
         $request->validate([
-            'DNI' => 'required|string|unique:clients,DNI,' . $client->id,
-            'name' => 'required|string|max:255',
-            'email' => 'nullable|email|unique:clients,email,' . $client->id,
-            'telephone' => 'required|string|max:15',
-            'city' => 'nullable|string|max:100',
-            'postal_code' => 'nullable|string|max:10',
-            'registered_at' => 'required|date',
+            'DNI' => [
+                'required',
+                'string',
+                'regex:/^[0-9]{8}[A-Za-z]$/',
+                'unique:clients,DNI,' . $client->id,
+                function ($attribute, $value, $fail) {
+                    if (!$this->validateSpanishDNI($value)) {
+                        $fail('El DNI no es válido.');
+                    }
+                },
+            ],
+            'name' => 'required|string|min:2|max:255|regex:/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]+$/',
+            'email' => 'required|email|unique:clients,email,' . $client->id . '|max:255',
+            'telephone' => [
+                'required',
+                'string',
+                'regex:/^(\+\d{1,4})\s*\d{6,15}$/',
+                function ($attribute, $value, $fail) {
+                    if (!$this->validateInternationalPhone($value)) {
+                        $fail($this->getPhoneValidationError($value));
+                    }
+                },
+            ],
+            'city' => 'nullable|string|min:2|max:100|regex:/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s\-\']+$/',
+            'postal_code' => 'nullable|string|regex:/^[0-9]{5}$/',
+            'registered_at' => 'required|date|before_or_equal:today',
+        ], [
+            'DNI.regex' => 'El DNI debe tener 8 dígitos seguidos de una letra.',
+            'DNI.unique' => 'Este DNI ya está registrado.',
+            'name.regex' => 'El nombre solo puede contener letras y espacios.',
+            'name.min' => 'El nombre debe tener al menos 2 caracteres.',
+            'telephone.regex' => 'El formato del teléfono no es válido.',
+            'city.regex' => 'La ciudad solo puede contener letras, espacios, guiones y apostrofes.',
+            'postal_code.regex' => 'El código postal debe tener exactamente 5 dígitos.',
+            'registered_at.before_or_equal' => 'La fecha de registro no puede ser futura.',
         ]);
 
-        $client->DNI = $request->DNI;
-        $client->name = $request->name;
-        $client->email = $request->email;
-        $client->telephone = $request->telephone;
-        $client->city = $request->city;
+        $client->DNI = strtoupper($request->DNI);
+        $client->name = ucwords(strtolower($request->name));
+        $client->email = strtolower($request->email);
+        $client->telephone = $this->formatInternationalPhone($request->telephone);
+        $client->city = $request->city ? ucwords(strtolower($request->city)) : null;
         $client->postal_code = $request->postal_code;
         $client->registered_at = $request->registered_at;
         $client->save();
 
         return Redirect::route('clients.index');
+    }
+
+    /**
+     * Validate Spanish DNI using the official algorithm
+     */
+    private function validateSpanishDNI($dni)
+    {
+        $dni = strtoupper($dni);
+        if (!preg_match('/^[0-9]{8}[A-Z]$/', $dni)) {
+            return false;
+        }
+
+        $letters = 'TRWAGMYFPDXBNJZSQVHLCKE';
+        $number = intval(substr($dni, 0, 8));
+        $letter = substr($dni, 8, 1);
+
+        return $letters[$number % 23] === $letter;
+    }
+
+    /**
+     * Format international phone number to standard format
+     */
+    private function formatInternationalPhone($phone)
+    {
+        $phone = preg_replace('/[^0-9+]/', '', $phone);
+        
+        if (preg_match('/^\+\d{1,4}\s\d+$/', $phone)) {
+            return $phone;
+        }
+        
+        if (preg_match('/^(\+\d{1,4})(\d+)$/', $phone, $matches)) {
+            $countryCode = $matches[1];
+            $number = $matches[2];
+            
+            $isValid = false;
+            switch ($countryCode) {
+                case '+34':
+                    $isValid = preg_match('/^[6-9]\d{8}$/', $number) && strlen($number) === 9;
+                    break;
+                case '+351':
+                    $isValid = preg_match('/^9[1236]\d{7}$/', $number) && strlen($number) === 9;
+                    break;
+                case '+376':
+                    $isValid = preg_match('/^[36]\d{5}$/', $number) && strlen($number) === 6;
+                    break;
+                case '+33':
+                    $isValid = preg_match('/^[67]\d{8}$/', $number) && strlen($number) === 9;
+                    break;
+                case '+39':
+                    $isValid = preg_match('/^3\d{9}$/', $number) && strlen($number) === 10;
+                    break;
+                case '+49':
+                    $isValid = preg_match('/^1[567]\d{8}$/', $number) && strlen($number) === 10;
+                    break;
+                case '+44':
+                    $isValid = preg_match('/^7[1-9]\d{8}$/', $number) && strlen($number) === 10;
+                    break;
+                case '+1':
+                    $isValid = preg_match('/^[2-9]\d{2}[2-9]\d{6}$/', $number) && strlen($number) === 10;
+                    break;
+                case '+52':
+                    $isValid = preg_match('/^[1-9]\d{9}$/', $number) && strlen($number) === 10;
+                    break;
+                case '+54':
+                    $isValid = preg_match('/^9\d{8,10}$/', $number) && (strlen($number) >= 9 && strlen($number) <= 11);
+                    break;
+                case '+57':
+                    $isValid = preg_match('/^3\d{9}$/', $number) && strlen($number) === 10;
+                    break;
+                case '+56':
+                    $isValid = preg_match('/^[89]\d{7,8}$/', $number) && (strlen($number) === 8 || strlen($number) === 9);
+                    break;
+                case '+51':
+                    $isValid = preg_match('/^9\d{8}$/', $number) && strlen($number) === 9;
+                    break;
+                case '+593':
+                    $isValid = preg_match('/^[89]\d{7}$/', $number) && strlen($number) === 8;
+                    break;
+                case '+58':
+                    $isValid = preg_match('/^4\d{9}$/', $number) && strlen($number) === 10;
+                    break;
+                case '+591':
+                    $isValid = preg_match('/^[67]\d{7}$/', $number) && strlen($number) === 8;
+                    break;
+                default:
+                    $isValid = strlen($number) >= 6 && strlen($number) <= 15;
+            }
+            
+            if ($isValid) {
+                return $countryCode . ' ' . $number;
+            }
+        }
+        
+        if (!str_starts_with($phone, '+')) {
+            if (preg_match('/^[6-9]\d{8}$/', $phone) && strlen($phone) === 9) {
+                return '+34 ' . $phone;
+            }
+        }
+        
+        return $phone;
+    }
+
+    /**
+     * Validate international phone number according to country-specific rules
+     */
+    private function validateInternationalPhone($phone)
+    {
+        // First, check if it matches the basic format with optional spaces
+        if (!preg_match('/^(\+\d{1,4})\s*\d{6,15}$/', $phone)) {
+            return false;
+        }
+        
+        // Parse the phone number (with or without spaces)
+        if (preg_match('/^(\+\d{1,4})\s*(\d+)$/', $phone, $matches)) {
+            $countryCode = $matches[1];
+            $number = $matches[2];
+            
+            switch ($countryCode) {
+                case '+34':
+                    return preg_match('/^[6-9]\d{8}$/', $number) && strlen($number) === 9;
+                case '+351':
+                    return preg_match('/^9[1236]\d{7}$/', $number) && strlen($number) === 9;
+                case '+376':
+                    return preg_match('/^[36]\d{5}$/', $number) && strlen($number) === 6;
+                case '+33':
+                    return preg_match('/^[67]\d{8}$/', $number) && strlen($number) === 9;
+                case '+39':
+                    return preg_match('/^3\d{9}$/', $number) && strlen($number) === 10;
+                case '+49':
+                    return preg_match('/^1[567]\d{8}$/', $number) && strlen($number) === 10;
+                case '+44':
+                    return preg_match('/^7[1-9]\d{8}$/', $number) && strlen($number) === 10;
+                case '+1': // United States
+                    return preg_match('/^[2-9]\d{2}[2-9]\d{6}$/', $number) && strlen($number) === 10;
+                case '+52': // Mexico
+                    return preg_match('/^[1-9]\d{9}$/', $number) && strlen($number) === 10;
+                case '+54': // Argentina
+                    return preg_match('/^9\d{8,10}$/', $number) && (strlen($number) >= 9 && strlen($number) <= 11);
+                case '+57': // Colombia
+                    return preg_match('/^3\d{9}$/', $number) && strlen($number) === 10;
+                case '+56': // Chile
+                    return preg_match('/^[89]\d{7,8}$/', $number) && (strlen($number) === 8 || strlen($number) === 9);
+                case '+51': 
+                    return preg_match('/^9\d{8}$/', $number) && strlen($number) === 9;
+                case '+593':
+                    return preg_match('/^[89]\d{7}$/', $number) && strlen($number) === 8;
+                case '+58':
+                    return preg_match('/^4\d{9}$/', $number) && strlen($number) === 10;
+                case '+591':
+                    return preg_match('/^[67]\d{7}$/', $number) && strlen($number) === 8;
+                default:
+                    // For other countries, basic length validation
+                    return strlen($number) >= 6 && strlen($number) <= 15;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Get specific error message for phone validation by country
+     */
+    private function getPhoneValidationError($phone)
+    {
+        // Parse the phone number (with or without spaces)
+        if (preg_match('/^(\+\d{1,4})\s*(\d+)$/', $phone, $matches)) {
+            $countryCode = $matches[1];
+            $number = $matches[2];
+            
+            // Return specific error messages for each country
+            switch ($countryCode) {
+                case '+34': // Spain
+                    return 'El número debe empezar por 6-9 y tener 9 dígitos';
+                case '+351': // Portugal
+                    return 'El número debe empezar por 91, 92, 93 o 96 y tener 9 dígitos';
+                case '+33': // France
+                    return 'El número debe empezar por 6 o 7 y tener 9 dígitos';
+                case '+39': // Italy
+                    return 'El número debe empezar por 3 y tener 10 dígitos';
+                case '+49': // Germany
+                    return 'El número debe empezar por 15, 16 o 17 y tener 10 dígitos';
+                case '+44': // United Kingdom
+                    return 'El número debe empezar por 7 y tener 10 dígitos';
+                case '+52': // Mexico
+                    return 'El número debe empezar por 1-9 y tener 10 dígitos';
+                case '+54': // Argentina
+                    return 'El número debe empezar por 9 y tener entre 9-11 dígitos';
+                case '+57': // Colombia
+                    return 'El número debe empezar por 3 y tener 10 dígitos';
+                case '+56': // Chile
+                    return 'El número debe empezar por 8 o 9 y tener 8-9 dígitos';
+                case '+51': // Peru
+                    return 'El número debe empezar por 9 y tener 9 dígitos';
+                case '+593': // Ecuador
+                    return 'El número debe empezar por 8 o 9 y tener 8 dígitos';
+                case '+58': // Venezuela
+                    return 'El número debe empezar por 4 y tener 10 dígitos';
+                case '+591': // Bolivia
+                    return 'El número debe empezar por 6 o 7 y tener 8 dígitos';
+                default:
+                    return 'El número de teléfono no es válido para el país seleccionado.';
+            }
+        }
+        
+        return 'El formato del teléfono no es válido.';
     }
 
     public function destroy(Client $client)

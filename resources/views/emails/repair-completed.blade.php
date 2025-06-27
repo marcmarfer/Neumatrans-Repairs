@@ -82,7 +82,7 @@
     
     <div class="footer">
         <p>Este es un mensaje automático, por favor no responda a este correo.</p>
-        <p>&copy; {{ date('Y') }} Neumatrans Repairs. Todos los derechos reservados.</p>
+        <p>&copy; {{ date('Y') }} NTC Car Service. Todos los derechos reservados.</p>
     </div>
 </body>
 </html> 

@@ -1,6 +1,6 @@
 <script setup>
 import { Head, router, useForm } from "@inertiajs/vue3";
-import { ref, computed, watch } from "vue";
+import { ref, watch } from "vue";
 import DataTable from "@/Components/DataTable.vue";
 import DateRangeSearch from "@/Components/DateRangeSearch.vue";
 import DarkButton from "@/Components/DarkButton.vue";
@@ -348,7 +348,7 @@ function deleteDeliveryNote() {
     <div v-if="isModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="closeModal"></div>
 
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 max-h-[80vh] overflow-y-auto">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">{{ isEditing ? 'Editar Albarán' : 'Añadir Nuevo Albarán' }}</h2>
           <button @click="closeModal" class="text-gray-500 hover:text-gray-700">

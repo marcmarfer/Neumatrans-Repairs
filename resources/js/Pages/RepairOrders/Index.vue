@@ -7,6 +7,7 @@ import DarkButton from "@/Components/DarkButton.vue";
 import LightButton from "@/Components/LightButton.vue";
 import DefaultInput from "@/Components/DefaultInput.vue";
 import DefaultSelect from "@/Components/DefaultSelect.vue";
+import SearchableSelect from "@/Components/SearchableSelect.vue";
 import GoBackButton from "@/Components/GoBackButton.vue";
 import DeleteButton from "@/Components/DeleteButton.vue";
 
@@ -444,11 +445,10 @@ function isOrderCompleted() {
 
         <form @submit.prevent="submitForm">
           <div class="space-y-6">
-            <!-- Datos generales de la orden -->
             <div class="bg-gray-50 p-4 rounded-lg">
               <h3 class="font-bold text-lg mb-3">Información General</h3>
               <div class="space-y-4">
-                <DefaultSelect
+                <SearchableSelect
                   id="client_id"
                   v-model="form.client_id"
                   label="Cliente"
@@ -456,17 +456,19 @@ function isOrderCompleted() {
                   value-field="id"
                   label-field="name"
                   placeholder="Seleccione un cliente"
+                  search-placeholder="Buscar cliente por nombre o DNI..."
                   required
                   :error="form.errors.client_id"
                 />
 
-                <DefaultSelect
+                <SearchableSelect
                   id="vehicle_id"
                   v-model="form.vehicle_id"
                   label="Vehículo"
                   :options="filteredVehicles"
                   value-field="id"
                   placeholder="Seleccione un vehículo"
+                  search-placeholder="Buscar por matrícula o modelo..."
                   required
                   :error="form.errors.vehicle_id"
                   :disabled="!form.client_id"
@@ -474,7 +476,7 @@ function isOrderCompleted() {
                   <template #option="{ option }">
                     {{ option.plate_number }} - {{ option.brand }} {{ option.model }}
                   </template>
-                </DefaultSelect>
+                </SearchableSelect>
 
                 <DefaultInput
                   id="observations"
@@ -538,7 +540,7 @@ function isOrderCompleted() {
                 </div>
                 
                 <div class="space-y-3">
-                  <DefaultSelect
+                  <SearchableSelect
                     :id="`repair_type_id_${index}`"
                     v-model="repair.repair_type_id"
                     label="Tipo de Reparación"
@@ -546,6 +548,7 @@ function isOrderCompleted() {
                     value-field="id"
                     label-field="name"
                     placeholder="Seleccione un tipo de reparación"
+                    search-placeholder="Buscar tipo de reparación..."
                     required
                     :error="form.errors[`repairs.${index}.repair_type_id`]"
                     :disabled="isOrderCompleted()"
