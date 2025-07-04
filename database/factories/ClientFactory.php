@@ -16,6 +16,7 @@ class ClientFactory extends Factory
             'postal_code' => $this->faker->postcode,
             'DNI' => strtoupper($this->faker->unique()->bothify('########??')),
             'registered_at' => $this->faker->date(),
+            'country' => $this->faker->countryCode,
         ];
     }
 }
