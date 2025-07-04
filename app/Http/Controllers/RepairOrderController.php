@@ -125,7 +125,7 @@ class RepairOrderController extends Controller
                     }
                 }
                 
-                if ($repairOrder->client && $repairOrder->client->email) {
+                if ($request->get('send_completion_email', false) && $repairOrder->client && $repairOrder->client->email) {
                     $firstRepair = $repairOrder->repairs->first();
                     if ($firstRepair) {
                         try {
@@ -176,6 +176,9 @@ class RepairOrderController extends Controller
             }
             
             DB::commit();
+            if ($request->wantsJson() && ! $request->header('X-Inertia')) {
+                return response()->json(['success' => true]);
+            }
             return Redirect::route('repair-orders.index');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -192,5 +195,35 @@ class RepairOrderController extends Controller
         } catch (\Exception $e) {
             return Redirect::route('repair-orders.index')->with('error', 'No se pudo eliminar la orden de reparación.');
         }
+    }
+
+    public function resendEmail(Request $request, RepairOrder $repairOrder)
+    {
+        $request->validate([
+            'type' => 'required|in:created,completed',
+        ]);
+        $firstRepair = $repairOrder->repairs->first();
+        if (!$firstRepair) {
+            return Redirect::route('repair-orders.index')->with('error', 'No hay reparaciones asociadas.');
+        }
+        if ($request->type === 'completed') {
+            try {
+                Mail::to($repairOrder->client->email)
+                    ->send(new RepairStatusNotification($firstRepair, true));
+            } catch (\Exception $e) {
+                \Log::error('Error al reenviar correo de reparación completada: ' . $e->getMessage());
+            }
+        } else {
+            try {
+                Mail::to($repairOrder->client->email)
+                    ->send(new RepairStatusNotification($firstRepair, false));
+            } catch (\Exception $e) {
+                \Log::error('Error al reenviar correo de creación de orden: ' . $e->getMessage());
+            }
+        }
+        if ($request->wantsJson() || $request->header('X-Inertia')) {
+            return response()->json(['success' => true]);
+        }
+        return Redirect::route('repair-orders.index');
     }
 } 

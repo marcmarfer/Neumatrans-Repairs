@@ -10,6 +10,7 @@ import DefaultSelect from "@/Components/DefaultSelect.vue";
 import SearchableSelect from "@/Components/SearchableSelect.vue";
 import GoBackButton from "@/Components/GoBackButton.vue";
 import DeleteButton from "@/Components/DeleteButton.vue";
+import axios from 'axios';
 
 const props = defineProps({
   repair_orders: {
@@ -108,6 +109,9 @@ const activeTab = ref("inProgress");
 const activeCategory = ref("orders");
 const filteredVehicles = ref([]);
 const selectedVehicle = ref(null);
+const loadingResend = ref(false);
+const isEditCompletionModalOpen = ref(false);
+const originalStatus = ref('');
 
 const form = useForm({
   id: "",
@@ -116,6 +120,7 @@ const form = useForm({
   observations: "",
   status: "reception",
   send_email: true,
+  send_completion_email: false,
   repairs: [
     {
       repair_type_id: "",
@@ -123,6 +128,20 @@ const form = useForm({
     }
   ]
 });
+
+const completionForm = useForm({
+  client_id: "",
+  vehicle_id: "",
+  observations: "",
+  status: "finished",
+  send_completion_email: true,
+  repairs: []
+});
+
+const isResendModalOpen = ref(false);
+const isCompletionModalOpen = ref(false);
+const loadingCompletion = ref(false);
+const actionOrder = ref(null);
 
 function inProgressRepairOrders() {
   return filterRepairOrders().filter(order => !order.completed_at);
@@ -225,6 +244,7 @@ function removeRepair(index) {
 }
 
 function editRepairOrder(order) {
+  originalStatus.value = order.status;
   isEditing.value = true;
   form.reset();
   form.id = order.id;
@@ -272,6 +292,10 @@ function closeModal() {
 }
 
 function submitForm() {
+  if (isEditing.value && form.status === 'finished' && originalStatus.value !== 'finished') {
+    isEditCompletionModalOpen.value = true;
+    return;
+  }
   if (isEditing.value) {
     form.put(route("repair-orders.update", form.id), {
       onSuccess: () => {
@@ -310,6 +334,95 @@ function deleteRepairOrder() {
 
 function isOrderCompleted() {
   return form.status === 'finished';
+}
+
+function openResendModal(order) {
+  actionOrder.value = order;
+  isResendModalOpen.value = true;
+}
+
+function cancelResend() {
+  isResendModalOpen.value = false;
+  actionOrder.value = null;
+}
+
+async function resendCreated() {
+  loadingResend.value = true;
+  try {
+    await axios.post(route('repair-orders.resendEmail', actionOrder.value.id), { type: 'created' });
+    cancelResend();
+  } catch (error) {
+    console.error(error);
+  } finally {
+    loadingResend.value = false;
+  }
+}
+
+async function resendCompleted() {
+  loadingResend.value = true;
+  try {
+    await axios.post(route('repair-orders.resendEmail', actionOrder.value.id), { type: 'completed' });
+    cancelResend();
+  } catch (error) {
+    console.error(error);
+  } finally {
+    loadingResend.value = false;
+  }
+}
+
+function openCompletionModal(order) {
+  actionOrder.value = order;
+  completionForm.reset();
+  completionForm.client_id = order.client_id.toString();
+  completionForm.vehicle_id = order.repairs.length > 0 ? order.repairs[0].vehicle_id.toString() : "";
+  completionForm.observations = order.observations || "";
+  completionForm.status = 'finished';
+  completionForm.send_completion_email = true;
+  completionForm.repairs = order.repairs.map(r => ({
+    id: r.id,
+    repair_type_id: r.repair_type_id.toString(),
+    observations: r.observations
+  }));
+  isCompletionModalOpen.value = true;
+}
+
+async function confirmCompletion(sendEmail = true) {
+  loadingCompletion.value = true;
+  try {
+    await axios.put(route('repair-orders.update', actionOrder.value.id), {
+      client_id: completionForm.client_id,
+      vehicle_id: completionForm.vehicle_id,
+      observations: completionForm.observations,
+      status: 'finished',
+      send_completion_email: sendEmail,
+      repairs: completionForm.repairs,
+    });
+    cancelCompletion();
+    router.reload({ preserveState: true, preserveScroll: true });
+  } catch (error) {
+    console.error(error);
+  } finally {
+    loadingCompletion.value = false;
+  }
+}
+
+function cancelCompletion() {
+  isCompletionModalOpen.value = false;
+  actionOrder.value = null;
+}
+
+function cancelEditCompletion() {
+  isEditCompletionModalOpen.value = false;
+}
+
+function confirmEdit(sendEmail) {
+  form.send_completion_email = sendEmail;
+  form.put(route("repair-orders.update", form.id), {
+    onSuccess: () => {
+      cancelEditCompletion();
+      closeModal();
+    },
+  });
 }
 </script>
 
@@ -400,6 +513,8 @@ function isOrderCompleted() {
         :items-per-page="10" 
         @delete="confirmDelete"
         @edit="editRepairOrder"
+        @complete="openCompletionModal"
+        @resend="openResendModal"
       />
       <p v-if="inProgressRepairOrders().length === 0" class="text-center text-gray-500 my-8">
         No hay órdenes de reparación en progreso
@@ -413,6 +528,8 @@ function isOrderCompleted() {
         :items-per-page="10" 
         @delete="confirmDelete"
         @edit="editRepairOrder"
+        @complete="openCompletionModal"
+        @resend="openResendModal"
       />
       <p v-if="completedRepairOrders().length === 0" class="text-center text-gray-500 my-8">
         No hay órdenes de reparación completadas
@@ -422,7 +539,7 @@ function isOrderCompleted() {
     <div v-if="isModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="closeModal"></div>
 
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-xl mx-4 z-10 max-h-[90vh] overflow-y-auto">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-xl mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">{{ isEditing ? 'Editar Orden de Reparación' : 'Añadir Nueva Orden de Reparación' }}</h2>
           <button @click="closeModal" class="text-gray-500 hover:text-gray-700">
@@ -591,7 +708,7 @@ function isOrderCompleted() {
     <div v-if="isDeleteModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="cancelDelete"></div>
 
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">Confirmar eliminación</h2>
           <button @click="cancelDelete" class="text-gray-500 hover:text-gray-700">
@@ -620,6 +737,94 @@ function isOrderCompleted() {
         <div class="flex justify-end space-x-3">
           <LightButton type="button" @click="cancelDelete">Cancelar</LightButton>
           <DeleteButton type="button" @click="deleteRepairOrder">Eliminar</DeleteButton>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="isResendModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
+      <div class="fixed inset-0 bg-black opacity-50" @click="cancelResend"></div>
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold">Reenviar Correo</h2>
+          <button @click="cancelResend" class="text-gray-500 hover:text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <p>
+          {{ actionOrder.status !== 'finished'
+            ? '¿Deseas reenviar el correo de nueva orden?'
+            : '¿Deseas reenviar el correo de reparación completada?'
+          }}
+        </p>
+        <div class="mt-6 flex justify-end space-x-3">
+          <LightButton type="button" @click="cancelResend">No</LightButton>
+          <DarkButton
+            type="button"
+            @click="actionOrder.status !== 'finished' ? resendCreated() : resendCompleted()"
+            :disabled="loadingResend"
+          >
+            {{ loadingResend ? 'Enviando...' : 'Sí' }}
+          </DarkButton>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="isCompletionModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
+      <div class="fixed inset-0 bg-black opacity-50" @click="cancelCompletion"></div>
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold">Finalizar Reparación</h2>
+          <button @click="cancelCompletion" class="text-gray-500 hover:text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <p>¿Deseas marcar la reparación como finalizada y enviar el correo de reparación completada?</p>
+        <div class="mt-6 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+          <LightButton type="button" class="flex-1" @click="cancelCompletion">No</LightButton>
+          <LightButton type="button" class="flex-1" @click="confirmCompletion(false)" :disabled="loadingCompletion">
+            Finalizar sin correo
+          </LightButton>
+          <DarkButton type="button" class="flex-1" @click="confirmCompletion(true)" :disabled="loadingCompletion">
+            {{ loadingCompletion ? 'Actualizando...' : 'Finalizar y enviar correo' }}
+          </DarkButton>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="isEditCompletionModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
+      <div class="fixed inset-0 bg-black opacity-50" @click="cancelEditCompletion"></div>
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg mx-4 z-10 max-h-[80vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold">Finalizar Orden de Reparación</h2>
+          <button @click="cancelEditCompletion" class="text-gray-500 hover:text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <p class="mb-4">¿Deseas finalizar la orden sin enviar correo o también enviar correo de finalización?</p>
+        <div class="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+          <LightButton
+            type="button"
+            class="flex-1 px-3 py-2 text-sm"
+            @click="cancelEditCompletion"
+          >Cancelar</LightButton>
+          <LightButton
+            type="button"
+            class="flex-1 px-3 py-2 text-sm"
+            @click="confirmEdit(false)"
+            :disabled="form.processing"
+          >Finalizar sin correo</LightButton>
+          <DarkButton
+            type="button"
+            class="flex-1 px-3 py-2 text-sm"
+            @click="confirmEdit(true)"
+            :disabled="form.processing"
+          >{{ form.processing ? 'Actualizando...' : 'Finalizar y enviar correo' }}</DarkButton>
         </div>
       </div>
     </div>

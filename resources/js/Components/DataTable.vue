@@ -1,22 +1,22 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch } from "vue";
 
 const props = defineProps({
   data: {
     type: Array,
-    required: true
+    required: true,
   },
   columns: {
     type: Array,
-    required: true
+    required: true,
   },
   itemsPerPage: {
     type: Number,
-    default: 10
-  }
+    default: 10,
+  },
 });
 
-const emit = defineEmits(['delete', 'edit']);
+const emit = defineEmits(["delete", "edit", "complete", "resend"]);
 
 const currentPage = ref(1);
 
@@ -27,9 +27,9 @@ const getStartIndex = () => (currentPage.value - 1) * props.itemsPerPage;
 const getEndIndex = () => Math.min(getStartIndex() + props.itemsPerPage, getTotalItems());
 
 const getNestedValue = (obj, path) => {
-  return path.split('.').reduce((current, key) => 
-    current ? current[key] : undefined, obj
-  );
+  return path
+    .split(".")
+    .reduce((current, key) => (current ? current[key] : undefined), obj);
 };
 
 const getPaginatedData = () => {
@@ -43,18 +43,21 @@ const getDisplayedPages = () => {
   let l;
 
   for (let i = 1; i <= getTotalPages(); i++) {
-    if (i === 1 || i === getTotalPages() || 
-        (i >= currentPage.value - delta && i <= currentPage.value + delta)) {
+    if (
+      i === 1 ||
+      i === getTotalPages() ||
+      (i >= currentPage.value - delta && i <= currentPage.value + delta)
+    ) {
       range.push(i);
     }
   }
 
-  range.forEach(i => {
+  range.forEach((i) => {
     if (l) {
       if (i - l === 2) {
         rangeWithDots.push(l + 1);
       } else if (i - l !== 1) {
-        rangeWithDots.push('...');
+        rangeWithDots.push("...");
       }
     }
     rangeWithDots.push(i);
@@ -77,22 +80,33 @@ const nextPage = () => {
 };
 
 const goToPage = (page) => {
-  if (typeof page === 'number') {
+  if (typeof page === "number") {
     currentPage.value = page;
   }
 };
 
 const handleDelete = (item) => {
-  emit('delete', item);
+  emit("delete", item);
 };
 
 const handleEdit = (item) => {
-  emit('edit', item);
+  emit("edit", item);
 };
 
-watch(() => props.data, () => {
-  currentPage.value = 1;
-});
+const handleComplete = (item) => {
+  emit("complete", item);
+};
+
+const handleResend = (item) => {
+  emit("resend", item);
+};
+
+watch(
+  () => props.data,
+  () => {
+    currentPage.value = 1;
+  }
+);
 </script>
 
 <template>
@@ -100,58 +114,101 @@ watch(() => props.data, () => {
     <table class="min-w-full border-collapse rounded-lg overflow-hidden">
       <thead class="bg-red-500">
         <tr>
-          <th v-for="(column, index) in columns" 
-              :key="column.key"
-              class="px-6 py-3 text-left text-xs text-white font-medium text-gray-700 uppercase tracking-wider border-b border-gray-200">
+          <th
+            v-for="(column, index) in columns"
+            :key="column.key"
+            class="px-6 py-3 text-left text-xs text-white font-medium text-gray-700 uppercase tracking-wider border-b border-gray-200"
+          >
             {{ column.label }}
           </th>
-          <th class="px-6 py-3 text-left text-xs text-white font-medium text-gray-700 uppercase tracking-wider border-b border-gray-200">
+          <th
+            class="px-6 py-3 text-left text-xs text-white font-medium text-gray-700 uppercase tracking-wider border-b border-gray-200"
+          >
             Acciones
           </th>
         </tr>
       </thead>
       <tbody class="bg-white">
-        <tr v-for="item in getPaginatedData()" 
-            :key="item.id"
-            class="hover:bg-gray-50 border-b border-gray-200">
-          <td v-for="column in columns" 
-              :key="column.key"
-              class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-            {{ column.formatter ? column.formatter(getNestedValue(item, column.key)) : getNestedValue(item, column.key) }}
+        <tr
+          v-for="item in getPaginatedData()"
+          :key="item.id"
+          class="hover:bg-gray-50 border-b border-gray-200"
+        >
+          <td
+            v-for="column in columns"
+            :key="column.key"
+            class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+          >
+            {{
+              column.formatter
+                ? column.formatter(getNestedValue(item, column.key))
+                : getNestedValue(item, column.key)
+            }}
           </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 flex space-x-2">
-            <button 
-              @click="handleEdit(item)" 
-              class="inline-flex items-center p-1.5 border border-red-500 text-xs font-medium rounded text-red-500 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              title="Editar"
-            >
-              <img src="/edit_icon.svg" width="20" height="20" alt="Editar" />
-            </button>
-            <button 
-              @click="handleDelete(item)" 
-              class="inline-flex items-center p-1.5 border border-red-500 text-xs font-medium rounded text-red-500 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              title="Eliminar"
-            >
-              <img src="/trash_can.svg" width="20" height="20" class="text-red-500" alt="Eliminar" />
-            </button>
+          <td class="py-4 px-4 whitespace-nowrap text-sm text-gray-900">
+            <div class="flex flex-wrap gap-2 sm:flex-nowrap">
+              <button
+                @click="handleEdit(item)"
+                class="inline-flex items-center justify-center w-8 h-8 p-1.5 border border-orange-500 text-xs font-medium rounded text-red-500 bg-white hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                title="Editar"
+              >
+                <img src="/images/edit_icon.svg" class="w-5 h-5" alt="Editar" />
+              </button>
+
+              <button
+                @click="handleDelete(item)"
+                class="inline-flex items-center justify-center w-8 h-8 p-1.5 border border-red-500 text-xs font-medium rounded text-red-500 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                title="Eliminar"
+              >
+                <img src="/images/trash_can.svg" class="w-5 h-5" alt="Eliminar" />
+              </button>
+
+              <button
+                v-if="item.status !== undefined && item.status !== 'finished'"
+                @click="handleComplete(item)"
+                class="inline-flex items-center justify-center w-8 h-8 p-1.5 border border-green-500 text-xs font-medium rounded text-green-500 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                title="Marcar como completada"
+              >
+                <img
+                  src="/images/tick.svg"
+                  class="w-5 h-5"
+                  alt="Marcar como completada"
+                />
+              </button>
+
+              <button
+                v-if="item.status !== undefined"
+                @click="handleResend(item)"
+                class="inline-flex items-center justify-center w-8 h-8 p-1.5 border border-blue-500 text-xs font-medium rounded text-blue-500 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                title="Reenviar correo"
+              >
+                <img src="/images/mail.svg" class="w-5 h-5" alt="Reenviar correo" />
+              </button>
+            </div>
           </td>
         </tr>
       </tbody>
     </table>
 
     <!-- Paginación -->
-    <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+    <div
+      class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6"
+    >
       <div class="flex-1 flex justify-between sm:hidden">
-        <button @click="previousPage"
-                :disabled="currentPage === 1"
-                class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }">
+        <button
+          @click="previousPage"
+          :disabled="currentPage === 1"
+          class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
+        >
           Anterior
         </button>
-        <button @click="nextPage"
-                :disabled="currentPage >= getTotalPages()"
-                class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                :class="{ 'opacity-50 cursor-not-allowed': currentPage >= getTotalPages() }">
+        <button
+          @click="nextPage"
+          :disabled="currentPage >= getTotalPages()"
+          class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          :class="{ 'opacity-50 cursor-not-allowed': currentPage >= getTotalPages() }"
+        >
           Siguiente
         </button>
       </div>
@@ -169,33 +226,57 @@ watch(() => props.data, () => {
         </div>
         <div>
           <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-            <button @click="previousPage"
-                    :disabled="currentPage === 1"
-                    class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                    :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }">
+            <button
+              @click="previousPage"
+              :disabled="currentPage === 1"
+              class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+              :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
+            >
               <span class="sr-only">Anterior</span>
-              <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+              <svg
+                class="h-5 w-5"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                  clip-rule="evenodd"
+                />
               </svg>
             </button>
-            <button v-for="page in getDisplayedPages()"
-                    :key="page"
-                    @click="goToPage(page)"
-                    :class="[
-                      currentPage === page
-                        ? 'z-10 bg-gray-50 border-gray-300 text-gray-600'
-                        : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50',
-                      'relative inline-flex items-center px-4 py-2 border text-sm font-medium'
-                    ]">
+            <button
+              v-for="page in getDisplayedPages()"
+              :key="page"
+              @click="goToPage(page)"
+              :class="[
+                currentPage === page
+                  ? 'z-10 bg-gray-50 border-gray-300 text-gray-600'
+                  : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50',
+                'relative inline-flex items-center px-4 py-2 border text-sm font-medium',
+              ]"
+            >
               {{ page }}
             </button>
-            <button @click="nextPage"
-                    :disabled="currentPage >= getTotalPages()"
-                    class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                    :class="{ 'opacity-50 cursor-not-allowed': currentPage >= getTotalPages() }">
+            <button
+              @click="nextPage"
+              :disabled="currentPage >= getTotalPages()"
+              class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+              :class="{ 'opacity-50 cursor-not-allowed': currentPage >= getTotalPages() }"
+            >
               <span class="sr-only">Siguiente</span>
-              <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+              <svg
+                class="h-5 w-5"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                  clip-rule="evenodd"
+                />
               </svg>
             </button>
           </nav>
@@ -203,4 +284,4 @@ watch(() => props.data, () => {
       </div>
     </div>
   </div>
-</template> 
+</template>

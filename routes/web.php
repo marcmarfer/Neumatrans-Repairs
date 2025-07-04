@@ -47,6 +47,7 @@ Route::get('/repair-orders', [RepairOrderController::class, 'index'])->name('rep
 Route::post('/repair-orders', [RepairOrderController::class, 'store'])->name('repair-orders.store');
 Route::put('/repair-orders/{repairOrder}', [RepairOrderController::class, 'update'])->name('repair-orders.update');
 Route::delete('/repair-orders/{repairOrder}', [RepairOrderController::class, 'destroy'])->name('repair-orders.destroy');
+Route::post('/repair-orders/{repairOrder}/resend-email', [RepairOrderController::class, 'resendEmail'])->name('repair-orders.resendEmail');
 
 Route::get('/delivery-notes', [DeliveryNoteController::class, 'index'])->name('delivery_notes.index');
 Route::post('/delivery-notes', [DeliveryNoteController::class, 'store'])->name('delivery_notes.store');

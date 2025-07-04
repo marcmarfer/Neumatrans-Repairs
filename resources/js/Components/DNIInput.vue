@@ -8,6 +8,10 @@ const props = defineProps({
     required: true,
   },
   modelValue: String,
+  country: {
+    type: String,
+    default: "ES",
+  },
   label: {
     type: String,
     default: "Documento de identidad",
@@ -24,7 +28,7 @@ const props = defineProps({
   error: String,
 });
 
-const emit = defineEmits(["update:modelValue"]);
+const emit = defineEmits(["update:modelValue", "update:country"]);
 
 const selectedCountry = ref("ES");
 const documentNumber = ref("");
@@ -72,6 +76,14 @@ watch(
   { immediate: true }
 );
 
+watch(
+  () => props.country,
+  (newCountry) => {
+    selectedCountry.value = newCountry;
+  },
+  { immediate: true }
+);
+
 watch(documentNumber, (newValue) => {
   emit("update:modelValue", newValue);
 });
@@ -97,6 +109,7 @@ function filteredCountries() {
 }
 
 function selectCountry(code) {
+  emit("update:country", code);
   selectedCountry.value = code;
   showCountryList.value = false;
   validateDocument();
@@ -202,6 +215,7 @@ onUnmounted(() => {
 
         <div class="max-h-60 overflow-y-auto country-list">
           <button
+            type="button"
             v-for="[code, country] in Object.entries(filteredCountries())"
             :key="code"
             @click="selectCountry(code)"

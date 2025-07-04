@@ -375,7 +375,7 @@ function deleteRepair() {
     <div v-if="isModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="closeModal"></div>
 
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">{{ isEditing ? 'Editar Reparación' : 'Añadir Nueva Reparación' }}</h2>
           <button @click="closeModal" class="text-gray-500 hover:text-gray-700">
@@ -477,7 +477,7 @@ function deleteRepair() {
     <div v-if="isDeleteModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="cancelDelete"></div>
 
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">Confirmar eliminación</h2>
           <button @click="cancelDelete" class="text-gray-500 hover:text-gray-700">

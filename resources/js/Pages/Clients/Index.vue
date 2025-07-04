@@ -66,6 +66,7 @@ const today = new Date().toISOString().split("T")[0];
 const form = useForm({
   id: "",
   DNI: "",
+  country: "ES",
   name: "",
   email: "",
   telephone: "",
@@ -112,6 +113,7 @@ function filterClients() {
 function addNewClient() {
   isEditing.value = false;
   form.reset();
+  form.country = "ES";
   form.registered_at = today;
   isModalOpen.value = true;
 }
@@ -121,6 +123,7 @@ function editClient(client) {
   form.reset();
   form.id = client.id;
   form.DNI = client.DNI;
+  form.country = client.country || "ES";
   form.name = client.name;
   form.email = client.email;
   form.telephone = client.telephone;
@@ -220,7 +223,7 @@ function formatPostalCode(event) {
     <div v-if="isModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="closeModal"></div>
 
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">{{ isEditing ? 'Editar Cliente' : 'Añadir Nuevo Cliente' }}</h2>
           <button @click="closeModal" class="text-gray-500 hover:text-gray-700">
@@ -246,6 +249,7 @@ function formatPostalCode(event) {
             <DNIInput
               id="dni"
               v-model="form.DNI"
+              v-model:country="form.country"
               label="DNI"
               required
               :error="form.errors.DNI"
@@ -331,7 +335,7 @@ function formatPostalCode(event) {
     <div v-if="isDeleteModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="cancelDelete"></div>
 
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">Confirmar eliminación</h2>
           <button @click="cancelDelete" class="text-gray-500 hover:text-gray-700">

@@ -9,6 +9,7 @@ import DefaultInput from "@/Components/DefaultInput.vue";
 import DefaultSelect from "@/Components/DefaultSelect.vue";
 import GoBackButton from "@/Components/GoBackButton.vue";
 import DeleteButton from "@/Components/DeleteButton.vue";
+import AddButton from '@/Components/AddButton.vue';
 
 const props = defineProps({
   delivery_notes: {
@@ -348,7 +349,7 @@ function deleteDeliveryNote() {
     <div v-if="isModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="closeModal"></div>
 
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 max-h-[80vh] overflow-y-auto">
+       <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">{{ isEditing ? 'Editar Albarán' : 'Añadir Nuevo Albarán' }}</h2>
           <button @click="closeModal" class="text-gray-500 hover:text-gray-700">
@@ -397,16 +398,7 @@ function deleteDeliveryNote() {
                     {{ supplier.name }}
                   </option>
                 </select>
-                <button 
-                  type="button" 
-                  @click="openNewSupplierModal"
-                  class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                  </svg>
-                  Nuevo
-                </button>
+                <AddButton @click="openNewSupplierModal" />
               </div>
               <div v-if="form.errors.supplier" class="text-sm text-red-600 mt-1">{{ form.errors.supplier }}</div>
             </div>
@@ -425,16 +417,7 @@ function deleteDeliveryNote() {
                     {{ family.name }}
                   </option>
                 </select>
-                <button 
-                  type="button" 
-                  @click="openNewFamilyModal"
-                  class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                  </svg>
-                  Nueva
-                </button>
+                <AddButton @click="openNewFamilyModal" />
               </div>
               <div v-if="form.errors.family" class="text-sm text-red-600 mt-1">{{ form.errors.family }}</div>
             </div>
@@ -509,7 +492,7 @@ function deleteDeliveryNote() {
     <div v-if="isNewSupplierModalOpen" class="fixed inset-0 flex items-center justify-center z-[60]">
       <div class="fixed inset-0 bg-black opacity-50" @click="closeNewSupplierModal"></div>
 
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">Añadir Nuevo Proveedor</h2>
           <button @click="closeNewSupplierModal" class="text-gray-500 hover:text-gray-700">
@@ -552,7 +535,7 @@ function deleteDeliveryNote() {
     <div v-if="isNewFamilyModalOpen" class="fixed inset-0 flex items-center justify-center z-[60]">
       <div class="fixed inset-0 bg-black opacity-50" @click="closeNewFamilyModal"></div>
 
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">Añadir Nueva Familia</h2>
           <button @click="closeNewFamilyModal" class="text-gray-500 hover:text-gray-700">
@@ -595,7 +578,7 @@ function deleteDeliveryNote() {
     <div v-if="isDeleteModalOpen" class="fixed inset-0 flex items-center justify-center z-[60]">
       <div class="fixed inset-0 bg-black opacity-50" @click="cancelDelete"></div>
 
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">Confirmar eliminación</h2>
           <button @click="cancelDelete" class="text-gray-500 hover:text-gray-700">

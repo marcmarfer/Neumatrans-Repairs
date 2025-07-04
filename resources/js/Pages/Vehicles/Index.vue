@@ -10,6 +10,7 @@ import GoBackButton from "@/Components/GoBackButton.vue";
 import DeleteButton from "@/Components/DeleteButton.vue";
 import SearchableSelect from "@/Components/SearchableSelect.vue";
 import DefaultSelect from "@/Components/DefaultSelect.vue";
+import AddButton from '@/Components/AddButton.vue';
 const props = defineProps({
   vehicles: Array,
   clients: Array,
@@ -270,7 +271,7 @@ function submitNewModelForm() {
     <div v-if="isModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="closeModal"></div>
 
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">{{ isEditing ? 'Editar Vehículo' : 'Añadir Nuevo Vehículo' }}</h2>
           <button @click="closeModal" class="text-gray-500 hover:text-gray-700">
@@ -335,13 +336,7 @@ function submitNewModelForm() {
                   <option value="" disabled>Selecciona una marca</option>
                   <option v-for="brand in props.brands" :key="brand.id" :value="brand.id">{{ brand.name }}</option>
                 </select>
-                <button
-                  type="button"
-                  @click="openNewBrandModal"
-                  class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Nueva
-                </button>
+                <AddButton @click="openNewBrandModal" />
               </div>
               <div v-if="form.errors.brand_id" class="text-sm text-red-600 mt-1">{{ form.errors.brand_id }}</div>
             </div>
@@ -359,13 +354,7 @@ function submitNewModelForm() {
                   <option value="" disabled>Selecciona un modelo</option>
                   <option v-for="m in filteredModels()" :key="m.id" :value="m.id">{{ m.name }}</option>
                 </select>
-                <button
-                  type="button"
-                  @click="openNewModelModal"
-                  class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Nueva
-                </button>
+                <AddButton @click="openNewModelModal" />
               </div>
               <div v-if="form.errors.model_id" class="text-sm text-red-600 mt-1">{{ form.errors.model_id }}</div>
             </div>
@@ -419,7 +408,7 @@ function submitNewModelForm() {
     <div v-if="isDeleteModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="cancelDelete"></div>
 
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">Confirmar eliminación</h2>
           <button @click="cancelDelete" class="text-gray-500 hover:text-gray-700">
@@ -455,7 +444,7 @@ function submitNewModelForm() {
     <!-- Modal Añadir Nueva Marca -->
     <div v-if="isNewBrandModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="closeNewBrandModal"></div>
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">Añadir Nueva Marca</h2>
           <button @click="closeNewBrandModal" class="text-gray-500 hover:text-gray-700">
@@ -483,7 +472,7 @@ function submitNewModelForm() {
     <!-- Modal Añadir Nuevo Modelo -->
     <div v-if="isNewModelModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="closeNewModelModal"></div>
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">Añadir Nuevo Modelo</h2>
           <button @click="closeNewModelModal" class="text-gray-500 hover:text-gray-700">

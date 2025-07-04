@@ -196,6 +196,7 @@ onUnmounted(() => {
 
         <div class="max-h-60 overflow-y-auto country-list">
           <button
+            type="button"
             v-for="(country, prefix) in filteredCountries()"
             :key="prefix"
             @click="selectCountry(prefix)"

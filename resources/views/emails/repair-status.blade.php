@@ -53,7 +53,7 @@
     <div class="content">
         <p>Estimado/a <strong>{{ $repair->vehicle->client->name }}</strong>,</p>
         
-        <p>Le informamos que su vehículo <strong>{{ $repair->vehicle->brand }} {{ $repair->vehicle->model }}</strong> con matrícula <strong>{{ $repair->vehicle->plate_number }}</strong> ha sido registrado para reparación.</p>
+        <p>Le informamos que su vehículo <strong>{{ $repair->vehicle->brand->name }} {{ $repair->vehicle->model->name }}</strong> con matrícula <strong>{{ $repair->vehicle->plate_number }}</strong> ha sido registrado para reparación.</p>
         
         <div class="info">
             <p><strong>Tipo de reparación:</strong> {{ $repair->repairType->name }}</p>

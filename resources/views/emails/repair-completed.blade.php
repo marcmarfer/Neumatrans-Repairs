@@ -53,7 +53,7 @@
     <div class="content">
         <p>Estimado/a <strong>{{ $repair->vehicle->client->name }}</strong>,</p>
         
-        <p>Nos complace informarle que la reparación de su vehículo <strong>{{ $repair->vehicle->brand }} {{ $repair->vehicle->model }}</strong> con matrícula <strong>{{ $repair->vehicle->plate_number }}</strong> ha sido completada satisfactoriamente.</p>
+        <p>Nos complace informarle que la reparación de su vehículo <strong>{{ $repair->vehicle->brand->name }} {{ $repair->vehicle->model->name }}</strong> con matrícula <strong>{{ $repair->vehicle->plate_number }}</strong> ha sido completada satisfactoriamente.</p>
         
         <div class="info">
             <p><strong>Tipo de reparación:</strong> {{ $repair->repairType->name }}</p>
