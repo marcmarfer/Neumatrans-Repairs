@@ -122,8 +122,8 @@ function editVehicle(vehicle) {
   form.id = vehicle.id;
   form.client_id = vehicle.client_id.toString();
   form.plate_number = vehicle.plate_number;
-  form.brand_id = vehicle.brand_id.toString();
-  form.model_id = vehicle.model_id.toString();
+  form.brand_id = vehicle.brand_id;
+  form.model_id = vehicle.model_id;
   form.VIN = vehicle.VIN;
   form.motor_type = vehicle.motor_type;
   form.added_at = vehicle.added_at;
@@ -327,15 +327,19 @@ function submitNewModelForm() {
             <div>
               <label for="brand_id" class="block text-sm font-medium text-gray-700 mb-1">Marca</label>
               <div class="flex space-x-2">
-                <select
-                  id="brand_id"
-                  v-model="form.brand_id"
-                  class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                  required
-                >
-                  <option value="" disabled>Selecciona una marca</option>
-                  <option v-for="brand in props.brands" :key="brand.id" :value="brand.id">{{ brand.name }}</option>
-                </select>
+                <div class="flex-1">
+                  <SearchableSelect
+                    id="brand_id"
+                    v-model="form.brand_id"
+                    :options="props.brands"
+                    value-field="id"
+                    label-field="name"
+                    placeholder="Seleccione una marca"
+                    search-placeholder="Buscar marca..."
+                    required
+                    :error="form.errors.brand_id"
+                  />
+                </div>
                 <AddButton @click="openNewBrandModal" />
               </div>
               <div v-if="form.errors.brand_id" class="text-sm text-red-600 mt-1">{{ form.errors.brand_id }}</div>
@@ -344,16 +348,20 @@ function submitNewModelForm() {
             <div>
               <label for="model_id" class="block text-sm font-medium text-gray-700 mb-1">Modelo</label>
               <div class="flex space-x-2">
-                <select
-                  id="model_id"
-                  v-model="form.model_id"
-                  :disabled="!form.brand_id"
-                  class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                  required
-                >
-                  <option value="" disabled>Selecciona un modelo</option>
-                  <option v-for="m in filteredModels()" :key="m.id" :value="m.id">{{ m.name }}</option>
-                </select>
+                <div class="flex-1">
+                  <SearchableSelect
+                    id="model_id"
+                    v-model="form.model_id"
+                    :options="filteredModels()"
+                    value-field="id"
+                    label-field="name"
+                    placeholder="Seleccione un modelo"
+                    search-placeholder="Buscar modelo..."
+                    :disabled="!form.brand_id"
+                    required
+                    :error="form.errors.model_id"
+                  />
+                </div>
                 <AddButton @click="openNewModelModal" />
               </div>
               <div v-if="form.errors.model_id" class="text-sm text-red-600 mt-1">{{ form.errors.model_id }}</div>
@@ -408,7 +416,7 @@ function submitNewModelForm() {
     <div v-if="isDeleteModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="cancelDelete"></div>
 
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">Confirmar eliminación</h2>
           <button @click="cancelDelete" class="text-gray-500 hover:text-gray-700">
@@ -441,10 +449,9 @@ function submitNewModelForm() {
       </div>
     </div>
 
-    <!-- Modal Añadir Nueva Marca -->
     <div v-if="isNewBrandModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="closeNewBrandModal"></div>
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">Añadir Nueva Marca</h2>
           <button @click="closeNewBrandModal" class="text-gray-500 hover:text-gray-700">
@@ -469,10 +476,9 @@ function submitNewModelForm() {
       </div>
     </div>
 
-    <!-- Modal Añadir Nuevo Modelo -->
     <div v-if="isNewModelModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="closeNewModelModal"></div>
-      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm mx-4 z-10 max-h-[80vh] overflow-y-auto overscroll-contain">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold">Añadir Nuevo Modelo</h2>
           <button @click="closeNewModelModal" class="text-gray-500 hover:text-gray-700">
@@ -482,23 +488,27 @@ function submitNewModelForm() {
           </button>
         </div>
         <form @submit.prevent="submitNewModelForm">
-          <DefaultSelect
-            id="new_model_brand"
-            v-model="newModelForm.brand_id"
-            label="Marca"
-            :options="props.brands"
-            value-field="id"
-            label-field="name"
-            :error="newModelForm.errors.brand_id"
-            required
-          />
-          <DefaultInput
-            id="model_name"
-            v-model="newModelForm.name"
-            label="Nombre del Modelo"
-            :error="newModelForm.errors.name"
-            required
-          />
+          <div class="space-y-4">
+            <SearchableSelect
+              id="new_model_brand"
+              v-model="newModelForm.brand_id"
+              label="Marca"
+              :options="props.brands"
+              placeholder="Seleccione una marca"
+              :searchable="false"
+              value-field="id"
+              label-field="name"
+              :error="newModelForm.errors.brand_id"
+              required
+            />
+            <DefaultInput
+              id="model_name"
+              v-model="newModelForm.name"
+              label="Nombre del Modelo"
+              :error="newModelForm.errors.name"
+              required
+            />
+          </div>
           <div class="mt-6 flex justify-end space-x-3">
             <LightButton type="button" @click="closeNewModelModal">Cancelar</LightButton>
             <DarkButton type="submit" :disabled="newModelForm.processing">Guardar</DarkButton>

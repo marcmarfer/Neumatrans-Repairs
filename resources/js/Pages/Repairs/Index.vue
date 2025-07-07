@@ -1,6 +1,6 @@
 <script setup>
 import { Head, router, useForm } from "@inertiajs/vue3";
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import DataTable from "@/Components/DataTable.vue";
 import DateRangeSearch from "@/Components/DateRangeSearch.vue";
 import DarkButton from "@/Components/DarkButton.vue";
@@ -47,7 +47,7 @@ const columns = [
   { 
     key: "repair_order_id", 
     label: "Orden de Reparación",
-    formatter: (repairOrderId) => repairOrderId || 'Sin asignar'
+    formatter: (repairOrderId) => repairOrderId ? `Orden #${repairOrderId}` : 'Sin asignar'
   },
   { key: "observations", label: "Observaciones" },
   { 
@@ -96,6 +96,17 @@ const form = useForm({
   started_at: today,
 });
 
+// Computed options for vehicles with full displayName
+const vehicleOptions = computed(() => props.vehicles.map(vehicle => {
+  const plate = vehicle.plate_number || '';
+  const brandName = vehicle.brand?.name || '';
+  const modelName = vehicle.model?.name || '';
+  const clientName = vehicle.client?.name || '';
+  const brandModel = [brandName, modelName].filter(Boolean).join(' ');
+  const full = [plate, brandModel, clientName].filter(Boolean).join(' - ');
+  return { ...vehicle, displayName: full };
+}));
+
 function inProgressRepairs() {
   return filterRepairs().filter(repair => !repair.completed_at);
 }
@@ -119,9 +130,12 @@ watch(() => form.vehicle_id, (newVehicleId) => {
   if (newVehicleId) {
     const vehicle = props.vehicles.find(v => v.id.toString() === newVehicleId.toString());
     if (vehicle && vehicle.client_id) {
-      filteredRepairOrders.value = props.repair_orders.filter(repairOrder => 
-        repairOrder.client_id === vehicle.client_id && repairOrder.status !== 'finished'
-      );
+      filteredRepairOrders.value = props.repair_orders
+        .filter(repairOrder => repairOrder.client_id === vehicle.client_id && repairOrder.status !== 'finished')
+        .map(repairOrder => ({
+          ...repairOrder,
+          displayName: `Orden #${repairOrder.id}`
+        }));
       
       if (form.repair_order_id && !filteredRepairOrders.value.some(ro => ro.id.toString() === form.repair_order_id.toString())) {
         form.repair_order_id = "";
@@ -402,17 +416,16 @@ function deleteRepair() {
               id="vehicle_id"
               v-model="form.vehicle_id"
               label="Vehículo"
-              :options="vehicles"
+              :options="vehicleOptions"
               value-field="id"
+              label-field="displayName"
               placeholder="Seleccione un vehículo"
-              search-placeholder="Buscar por matrícula, marca o cliente..."
+              search-placeholder="Buscar por matrícula, marca, modelo o cliente..."
               required
               :error="form.errors.vehicle_id"
             >
               <template #option="{ option }">
-                {{ option.plate_number }} - {{ option.brand }} {{ option.model }} ({{
-                  option.client?.name
-                }})
+                {{ option.displayName }}
               </template>
             </SearchableSelect>
 
@@ -422,14 +435,15 @@ function deleteRepair() {
               label="Orden de Reparación"
               :options="filteredRepairOrders"
               value-field="id"
+              label-field="displayName"
               placeholder="Seleccione una orden de reparación"
-              search-placeholder="Buscar por ID o cliente..."
+              search-placeholder="Buscar por ID..."
               required
               :error="form.errors.repair_order_id"
               :disabled="!form.vehicle_id"
             >
               <template #option="{ option }">
-                Orden #{{ option.id }} - {{ option.client?.name }}
+                {{ option.displayName }}
               </template>
             </SearchableSelect>
 

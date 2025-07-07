@@ -22,9 +22,9 @@ class RepairOrderController extends Controller
     public function index()
     {
         return Inertia::render('RepairOrders/Index', [
-            'repair_orders' => RepairOrder::with(['client', 'repairs.vehicle', 'repairs.repairType', 'createdBy'])->get(),
+            'repair_orders' => RepairOrder::with(['client', 'repairs.vehicle.brand', 'repairs.vehicle.model', 'repairs.repairType', 'createdBy'])->get(),
             'clients' => Client::all(),
-            'vehicles' => Vehicle::with('client')->get(),
+            'vehicles' => Vehicle::with(['client', 'brand', 'model'])->get(),
             'repair_types' => RepairType::all(),
         ]);
     }

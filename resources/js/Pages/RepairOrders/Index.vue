@@ -58,7 +58,13 @@ const columns = [
       });
       
       return Object.values(uniqueVehicles)
-        .map(v => `${v.brand} ${v.model} (${v.plate_number})`)
+        .map(v => {
+          const brandName = v.brand?.name || '';
+          const modelName = v.model?.name || '';
+          const plate = v.plate_number || '';
+          const name = [brandName, modelName].filter(Boolean).join(' ');
+          return name ? `${name} (${plate})` : plate;
+        })
         .join(', ');
     }
   },
@@ -153,9 +159,18 @@ function completedRepairOrders() {
 
 watch(() => form.client_id, (newClientId) => {
   if (newClientId) {
-    filteredVehicles.value = props.vehicles.filter(vehicle => 
-      vehicle.client_id.toString() === newClientId.toString()
-    );
+    filteredVehicles.value = props.vehicles
+      .filter(vehicle => vehicle.client_id.toString() === newClientId.toString())
+      .map(vehicle => ({
+        ...vehicle,
+        displayName: (() => {
+          const plate = vehicle.plate_number || '';
+          const brandName = vehicle.brand?.name || '';
+          const modelName = vehicle.model?.name || '';
+          const full = [brandName, modelName].filter(Boolean).join(' ');
+          return full ? `${plate} - ${full}` : plate;
+        })()
+      }));
     
     if (form.vehicle_id && !filteredVehicles.value.some(v => v.id.toString() === form.vehicle_id.toString())) {
       form.vehicle_id = "";
@@ -206,7 +221,7 @@ function filterRepairOrders() {
         order.client?.name?.toLowerCase().includes(query) ||
         order.repairs?.some(repair => 
           repair.vehicle?.plate_number?.toLowerCase().includes(query) ||
-          repair.vehicle?.brand?.toLowerCase().includes(query)
+          repair.vehicle?.brand?.name?.toLowerCase().includes(query)
         )
     );
   }
@@ -252,9 +267,18 @@ function editRepairOrder(order) {
   form.observations = order.observations;
   form.status = order.status;
   
-  filteredVehicles.value = props.vehicles.filter(vehicle => 
-    vehicle.client_id === order.client_id
-  );
+  filteredVehicles.value = props.vehicles
+    .filter(vehicle => vehicle.client_id === order.client_id)
+    .map(vehicle => ({
+      ...vehicle,
+      displayName: (() => {
+        const plate = vehicle.plate_number || '';
+        const brandName = vehicle.brand?.name || '';
+        const modelName = vehicle.model?.name || '';
+        const full = [brandName, modelName].filter(Boolean).join(' ');
+        return full ? `${plate} - ${full}` : plate;
+      })()
+    }));
   
   if (order.repairs && order.repairs.length > 0) {
     const vehicleGroups = {};
@@ -268,7 +292,7 @@ function editRepairOrder(order) {
     const firstVehicleId = Object.keys(vehicleGroups)[0];
     if (firstVehicleId) {
       form.vehicle_id = firstVehicleId.toString();
-      selectedVehicle.value = props.vehicles.find(v => v.id.toString() === firstVehicleId.toString());
+      selectedVehicle.value = filteredVehicles.value.find(v => v.id.toString() === firstVehicleId.toString());
       
       form.repairs = vehicleGroups[firstVehicleId].map(repair => ({
         id: repair.id,
@@ -584,14 +608,15 @@ function confirmEdit(sendEmail) {
                   label="Vehículo"
                   :options="filteredVehicles"
                   value-field="id"
+                  label-field="displayName"
                   placeholder="Seleccione un vehículo"
-                  search-placeholder="Buscar por matrícula o modelo..."
+                  search-placeholder="Buscar por matrícula o tipo de coche..."
                   required
                   :error="form.errors.vehicle_id"
                   :disabled="!form.client_id"
                 >
                   <template #option="{ option }">
-                    {{ option.plate_number }} - {{ option.brand }} {{ option.model }}
+                    {{ option.displayName }}
                   </template>
                 </SearchableSelect>
 
@@ -604,8 +629,7 @@ function confirmEdit(sendEmail) {
                   :rows="2"
                 />
 
-                <DefaultSelect
-                  v-if="isEditing"
+                <SearchableSelect
                   id="status"
                   v-model="form.status"
                   label="Estado"
@@ -617,17 +641,18 @@ function confirmEdit(sendEmail) {
                   ]"
                   value-field="id"
                   label-field="name"
+                  placeholder="Seleccione un estado"
+                  :searchable="false"
                   required
                   :error="form.errors.status"
-                  :disabled="form.status === 'finished'"
+                  :disabled="originalStatus === 'finished'"
                 />
               </div>
             </div>
 
-            <!-- Reparaciones individuales -->
             <div v-if="form.vehicle_id" class="bg-gray-50 p-4 rounded-lg">
               <div class="flex justify-between items-center mb-3">
-                <h3 class="font-bold text-lg">Reparaciones para {{ selectedVehicle?.brand }} {{ selectedVehicle?.model }} ({{ selectedVehicle?.plate_number }})</h3>
+                <h3 class="font-bold text-lg">Reparaciones para {{ selectedVehicle?.brand?.name || '' }} {{ selectedVehicle?.model?.name || '' }} ({{ selectedVehicle?.plate_number || '' }})</h3>
                 <DarkButton 
                   v-if="!isOrderCompleted()" 
                   type="button" 

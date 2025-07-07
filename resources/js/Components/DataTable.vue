@@ -100,13 +100,6 @@ const handleComplete = (item) => {
 const handleResend = (item) => {
   emit("resend", item);
 };
-
-watch(
-  () => props.data,
-  () => {
-    currentPage.value = 1;
-  }
-);
 </script>
 
 <template>

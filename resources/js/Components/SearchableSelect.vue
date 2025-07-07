@@ -37,6 +37,10 @@ const props = defineProps({
     default: false,
   },
   error: String,
+  searchable: {
+    type: Boolean,
+    default: true,
+  },
   noOptionsText: {
     type: String,
     default: "No se encontraron opciones",
@@ -67,6 +71,7 @@ watch(
 );
 
 function filteredOptions() {
+  if (!props.searchable) return props.options;
   if (!searchQuery.value) return props.options;
   const query = searchQuery.value.toLowerCase();
   return props.options.filter((option) => {
@@ -190,7 +195,7 @@ onUnmounted(() => {
           v-if="isOpen"
           class="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm"
         >
-          <div class="sticky top-0 bg-white border-b border-gray-200 p-2">
+          <div v-if="props.searchable" class="sticky top-0 bg-white border-b border-gray-200 p-2">
             <input
               ref="searchInput"
               v-model="searchQuery"

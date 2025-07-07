@@ -7,6 +7,7 @@ import DarkButton from "@/Components/DarkButton.vue";
 import LightButton from "@/Components/LightButton.vue";
 import DefaultInput from "@/Components/DefaultInput.vue";
 import DefaultSelect from "@/Components/DefaultSelect.vue";
+import SearchableSelect from "@/Components/SearchableSelect.vue";
 import GoBackButton from "@/Components/GoBackButton.vue";
 import DeleteButton from "@/Components/DeleteButton.vue";
 import AddButton from '@/Components/AddButton.vue';
@@ -372,32 +373,38 @@ function deleteDeliveryNote() {
 
         <form @submit.prevent="submitForm">
           <div class="space-y-4">
-            <DefaultSelect
+            <SearchableSelect
               id="type"
               v-model="form.type"
               label="Tipo"
-              required
-              :error="form.errors.type"
               :options="[
                 { value: 'generic', label: 'Genérico' },
                 { value: 'corrective', label: 'Correctivo' },
               ]"
+              value-field="value"
+              label-field="label"
+              placeholder="Seleccione un tipo"
+              :searchable="false"
+              required
+              :error="form.errors.type"
             />
 
             <div>
               <label for="supplier" class="block text-sm font-medium text-gray-700 mb-1">Proveedor</label>
               <div class="flex space-x-2">
-                <select
-                  id="supplier"
-                  v-model="form.supplier"
-                  class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                  required
-                >
-                  <option value="" disabled>Selecciona un proveedor</option>
-                  <option v-for="supplier in getSortedSuppliers()" :key="supplier.id" :value="supplier.name">
-                    {{ supplier.name }}
-                  </option>
-                </select>
+                <div class="flex-1">
+                  <SearchableSelect
+                    id="supplier"
+                    v-model="form.supplier"
+                    :options="getSortedSuppliers()"
+                    value-field="name"
+                    label-field="name"
+                    placeholder="Seleccione un proveedor"
+                    search-placeholder="Buscar proveedor..."
+                    required
+                    :error="form.errors.supplier"
+                  />
+                </div>
                 <AddButton @click="openNewSupplierModal" />
               </div>
               <div v-if="form.errors.supplier" class="text-sm text-red-600 mt-1">{{ form.errors.supplier }}</div>
@@ -406,17 +413,19 @@ function deleteDeliveryNote() {
             <div>
               <label for="family" class="block text-sm font-medium text-gray-700 mb-1">Familia</label>
               <div class="flex space-x-2">
-                <select
-                  id="family"
-                  v-model="form.family"
-                  class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                  required
-                >
-                  <option value="" disabled>Selecciona una familia</option>
-                  <option v-for="family in getSortedFamilies()" :key="family.id" :value="family.name">
-                    {{ family.name }}
-                  </option>
-                </select>
+                <div class="flex-1">
+                  <SearchableSelect
+                    id="family"
+                    v-model="form.family"
+                    :options="getSortedFamilies()"
+                    value-field="name"
+                    label-field="name"
+                    placeholder="Seleccione una familia"
+                    search-placeholder="Buscar familia..."
+                    required
+                    :error="form.errors.family"
+                  />
+                </div>
                 <AddButton @click="openNewFamilyModal" />
               </div>
               <div v-if="form.errors.family" class="text-sm text-red-600 mt-1">{{ form.errors.family }}</div>
