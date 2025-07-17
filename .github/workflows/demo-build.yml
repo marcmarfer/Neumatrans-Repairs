@@ -61,39 +61,37 @@ jobs:
         run: tar -czf app.tgz ./*
 
       - name: SSH SCP and deployment for demo
-        uses: cross-the-world/ssh-scp-ssh-pipelines@latest
-        env:
-          WELCOME: "ssh scp ssh pipelines"
-          LASTSSH: "Deploying to demo"
+        uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.DEMO_SSH_HOST }}
-          user: ${{ secrets.DEMO_SSH_USER }}
-          pass: ${{ secrets.DEMO_SSH_PASSWORD }}
+          username: ${{ secrets.DEMO_SSH_USER }}
+          password: ${{ secrets.DEMO_SSH_PASSWORD }}
           port: ${{ secrets.DEMO_SSH_PORT }}
-          connect_timeout: 10s
-          scp: |
-            './app.tgz' => ${{ secrets.DEMO_SSH_DIR }}
-          last_ssh: |
+          source: "app.tgz"
+          target: ${{ secrets.DEMO_SSH_DIR }}
+
+      - name: Execute remote deployment commands
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DEMO_SSH_HOST }}
+          username: ${{ secrets.DEMO_SSH_USER }}
+          password: ${{ secrets.DEMO_SSH_PASSWORD }}
+          port: ${{ secrets.DEMO_SSH_PORT }}
+          script: |
             set -e
             set -x
-
             cd ${{ secrets.DEMO_SSH_DIR }}
             tar -xzf app.tgz
-
             COMPOSER_ALLOW_SUPERUSER=1 composer install --optimize-autoloader --no-dev
-
             php artisan config:clear
             php artisan view:clear
             php artisan cache:clear
-
             php artisan migrate:fresh --seed --force
             php artisan storage:link
             php artisan key:generate
-
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
-
             mkdir -p storage/framework/views
             chown -R www-data:www-data storage
             chmod -R 775 storage
