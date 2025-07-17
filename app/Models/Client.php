@@ -16,7 +16,8 @@ class Client extends Model
         'telephone',
         'city',
         'postal_code',
-        'registered_at'
+        'registered_at',
+        'country',
     ];
 
     public function vehicle()
