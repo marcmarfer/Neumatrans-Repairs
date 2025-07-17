@@ -14,11 +14,11 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\InsightsController;
 use App\Http\Controllers\RepairTrackingController;
-use App\Http\Middleware\ProductionMiddleware;
+use App\Http\Middleware\PreventIntegrationAccess;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\VehicleModelController;
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', PreventIntegrationAccess::class])->group(function () {
     Route::get('/dashboard', [UserController::class, 'show'])->name('dashboard.show');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
