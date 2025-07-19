@@ -62,31 +62,33 @@ function getInputClasses() {
     <label v-if="label" :for="id" class="block text-sm font-medium text-gray-700">
       {{ label }} <span v-if="required" class="text-red-500">*</span>
     </label>
+    <div class="relative">
+      <textarea
+        v-if="isTextarea"
+        :id="id"
+        :value="modelValue"
+        @input="updateValue"
+        :placeholder="placeholder"
+        :required="required"
+        :rows="rows"
+        :readonly="readonly"
+        :class="getInputClasses()"
+      ></textarea>
 
-    <textarea
-      v-if="isTextarea"
-      :id="id"
-      :value="modelValue"
-      @input="updateValue"
-      :placeholder="placeholder"
-      :required="required"
-      :rows="rows"
-      :readonly="readonly"
-      :class="getInputClasses()"
-    ></textarea>
+      <input
+        v-else
+        :id="id"
+        :type="type"
+        :value="modelValue"
+        @input="updateValue"
+        :placeholder="placeholder"
+        :required="required"
+        :readonly="readonly"
+        :class="getInputClasses()"
+      />
 
-    <input
-      v-else
-      :id="id"
-      :type="type"
-      :value="modelValue"
-      @input="updateValue"
-      :placeholder="placeholder"
-      :required="required"
-      :readonly="readonly"
-      :class="getInputClasses()"
-    />
-
+      <slot name="suffix"></slot>
+    </div>
     <div v-if="error" class="text-red-500 text-sm mt-1">{{ error }}</div>
   </div>
 </template>
