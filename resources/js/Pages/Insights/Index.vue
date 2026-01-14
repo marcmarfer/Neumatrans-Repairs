@@ -1,9 +1,11 @@
 <script setup>
 import { ref } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import GoBackButton from "@/Components/GoBackButton.vue";
 import DarkButton from "@/Components/DarkButton.vue";
 import axios from 'axios';
+
+const page = usePage();
 
 const openaiQuery = ref('');
 const openaiResponse = ref('');
@@ -129,7 +131,7 @@ function copyToClipboard(text) {
         </div>
       </div>
       
-      <div v-if="$page.props.viteAppEnv === 'prod'">
+      <div v-if="page.props.viteAppEnv === 'prod'">
         <div class="flex items-center gap-4 mb-4">
           <h2 class="text-xl font-semibold">Consulta Premium</h2>
           <span class="text-white text-xs px-2 py-1 rounded-full" style="background: linear-gradient(135deg, #f97316, #f59e0b, #d97706, #b45309, #d97706);">OpenAI GPT-4</span>

@@ -1,7 +1,9 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import DefaultInput from '@/Components/DefaultInput.vue';
 import { ref } from 'vue';
+
+const page = usePage();
 
 defineProps({
     canResetPassword: {
@@ -35,8 +37,8 @@ const submit = () => {
                 <h1 class="text-2xl font-bold text-gray-800">NTC Car Service</h1>
                 <p class="text-gray-600 mt-2">Inicia sesión en tu cuenta</p>
             </div>
-            <div v-if="$page.props.flash.error" class="mb-4 p-4 bg-red-100 rounded-lg text-red-700 text-sm">
-                {{ $page.props.flash.error }}
+            <div v-if="page.props.flash.error" class="mb-4 p-4 bg-red-100 rounded-lg text-red-700 text-sm">
+                {{ page.props.flash.error }}
             </div>
 
             <div v-if="status" class="mb-4 p-4 bg-green-100 rounded-lg text-green-700 text-sm">
@@ -92,7 +94,7 @@ const submit = () => {
                     {{ form.processing ? 'Iniciando sesión...' : 'Iniciar Sesión' }}
                 </button>
 
-                <div class="text-center mt-4" v-if="$page.props.viteAppEnv === 'demo'">
+                <div class="text-center mt-4" v-if="page.props.viteAppEnv === 'demo'">
                     <Link :href="route('register')" class="text-sm text-gray-600 hover:text-red-600">
                     ¿No tienes cuenta? Regístrate
                     </Link>
