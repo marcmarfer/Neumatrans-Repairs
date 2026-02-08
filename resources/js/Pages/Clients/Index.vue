@@ -13,8 +13,12 @@ import PhoneInput from "@/Components/PhoneInput.vue";
 
 const props = defineProps({
   clients: {
-    type: Array,
+    type: Object,
     required: true,
+  },
+  filters: {
+    type: Object,
+    default: () => ({}),
   },
 });
 
@@ -50,12 +54,11 @@ const columns = [
   },
 ];
 
+const searchQuery = ref(props.filters?.q ?? "");
 const dateRange = ref({
-  startDate: "",
-  endDate: "",
+  startDate: props.filters?.start ?? "",
+  endDate: props.filters?.end ?? "",
 });
-
-const searchQuery = ref("");
 const isModalOpen = ref(false);
 const isDeleteModalOpen = ref(false);
 const clientToDelete = ref(null);
@@ -75,29 +78,47 @@ const form = useForm({
   registered_at: today,
 });
 
-const filteredClients = computed(() => {
-  let filtered = props.clients;
-  if (dateRange.value.startDate || dateRange.value.endDate) {
-    filtered = filtered.filter((client) => {
-      const registeredDate = new Date(client.registered_at);
-      const startDate = dateRange.value.startDate ? new Date(dateRange.value.startDate) : null;
-      const endDate = dateRange.value.endDate ? new Date(dateRange.value.endDate) : null;
-      if (startDate && endDate) return registeredDate >= startDate && registeredDate <= endDate;
-      if (startDate) return registeredDate >= startDate;
-      if (endDate) return registeredDate <= endDate;
-      return true;
-    });
-  }
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    filtered = filtered.filter(
-      (client) =>
-        (client.DNI && client.DNI.toLowerCase().includes(query)) ||
-        (client.name && client.name.toLowerCase().includes(query))
-    );
-  }
-  return filtered;
-});
+// ── Server-side data fetching ──────────────────────────────────────
+
+const paginationMeta = computed(() => ({
+  current_page: props.clients.current_page,
+  last_page: props.clients.last_page,
+  from: props.clients.from,
+  to: props.clients.to,
+  total: props.clients.total,
+  per_page: props.clients.per_page,
+}));
+
+function fetchData(page = null) {
+  const params = {};
+  if (searchQuery.value) params.q = searchQuery.value;
+  if (dateRange.value.startDate) params.start = dateRange.value.startDate;
+  if (dateRange.value.endDate) params.end = dateRange.value.endDate;
+  if (page && page > 1) params.page = page;
+
+  router.get(route('clients.index'), params, {
+    preserveState: true,
+    preserveScroll: true,
+    only: ['clients', 'filters'],
+  });
+}
+
+let searchTimeout = null;
+function onSearchInput() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    fetchData(1);
+  }, 300);
+}
+
+function onDateRangeChange(newRange) {
+  dateRange.value = newRange;
+  fetchData(1);
+}
+
+function onPageChange(page) {
+  fetchData(page);
+}
 
 function addNewClient() {
   isEditing.value = false;
@@ -188,6 +209,7 @@ function formatPostalCode(event) {
         <input
           type="text"
           v-model="searchQuery"
+          @input="onSearchInput"
           placeholder="Buscar por DNI o nombre..."
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
@@ -197,16 +219,20 @@ function formatPostalCode(event) {
       <DateRangeSearch
         start-label="Fecha de registro desde"
         end-label="Fecha de registro hasta"
-        @update:dateRange="(newRange) => (dateRange = newRange)"
+        :initial-start-date="filters?.start ?? ''"
+        :initial-end-date="filters?.end ?? ''"
+        @update:dateRange="onDateRangeChange"
       />
     </div>
 
     <DataTable 
-      :data="filteredClients" 
+      :data="clients.data" 
       :columns="columns" 
-      :items-per-page="10"
+      :server-side="true"
+      :meta="paginationMeta"
       @delete="confirmDelete"
-      @edit="editClient" 
+      @edit="editClient"
+      @page-change="onPageChange"
     />
 
     <div v-if="isModalOpen" class="fixed inset-0 flex items-center justify-center z-50">

@@ -12,10 +12,14 @@ import SearchableSelect from "@/Components/SearchableSelect.vue";
 import DefaultSelect from "@/Components/DefaultSelect.vue";
 import AddButton from '@/Components/AddButton.vue';
 const props = defineProps({
-  vehicles: Array,
+  vehicles: Object,
   clients: Array,
   brands: Array,
   models: Array,
+  filters: {
+    type: Object,
+    default: () => ({}),
+  },
 });
 
 const formatDate = (dateString) => {
@@ -43,10 +47,10 @@ const columns = [
   },
 ];
 
-const searchQuery = ref("");
+const searchQuery = ref(props.filters?.q ?? "");
 const dateRange = ref({
-  startDate: "",
-  endDate: "",
+  startDate: props.filters?.start ?? "",
+  endDate: props.filters?.end ?? "",
 });
 const isModalOpen = ref(false);
 const isDeleteModalOpen = ref(false);
@@ -72,29 +76,47 @@ const filteredModels = computed(() =>
     : []
 );
 
-const filteredVehicles = computed(() => {
-  let filtered = props.vehicles;
-  if (dateRange.value.startDate || dateRange.value.endDate) {
-    filtered = filtered.filter((vehicle) => {
-      const addedDate = new Date(vehicle.added_at);
-      const startDate = dateRange.value.startDate ? new Date(dateRange.value.startDate) : null;
-      const endDate = dateRange.value.endDate ? new Date(dateRange.value.endDate) : null;
-      if (startDate && endDate) return addedDate >= startDate && addedDate <= endDate;
-      if (startDate) return addedDate >= startDate;
-      if (endDate) return addedDate <= endDate;
-      return true;
-    });
-  }
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    filtered = filtered.filter(
-      (vehicle) =>
-        vehicle.client?.name?.toLowerCase().includes(query) ||
-        (vehicle.plate_number && vehicle.plate_number.toLowerCase().includes(query))
-    );
-  }
-  return filtered;
-});
+// ── Server-side data fetching ──────────────────────────────────────
+
+const paginationMeta = computed(() => ({
+  current_page: props.vehicles.current_page,
+  last_page: props.vehicles.last_page,
+  from: props.vehicles.from,
+  to: props.vehicles.to,
+  total: props.vehicles.total,
+  per_page: props.vehicles.per_page,
+}));
+
+function fetchData(page = null) {
+  const params = {};
+  if (searchQuery.value) params.q = searchQuery.value;
+  if (dateRange.value.startDate) params.start = dateRange.value.startDate;
+  if (dateRange.value.endDate) params.end = dateRange.value.endDate;
+  if (page && page > 1) params.page = page;
+
+  router.get(route('vehicles.index'), params, {
+    preserveState: true,
+    preserveScroll: true,
+    only: ['vehicles', 'filters'],
+  });
+}
+
+let searchTimeout = null;
+function onSearchInput() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    fetchData(1);
+  }, 300);
+}
+
+function onDateRangeChange(newRange) {
+  dateRange.value = newRange;
+  fetchData(1);
+}
+
+function onPageChange(page) {
+  fetchData(page);
+}
 
 function addNewVehicle() {
   isEditing.value = false;
@@ -234,6 +256,7 @@ function submitNewModelForm() {
         <input
           type="text"
           v-model="searchQuery"
+          @input="onSearchInput"
           placeholder="Buscar por cliente o matrícula..."
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
@@ -243,16 +266,20 @@ function submitNewModelForm() {
       <DateRangeSearch
         start-label="Fecha de alta desde"
         end-label="Fecha de alta hasta"
-        @update:dateRange="(newRange) => (dateRange = newRange)"
+        :initial-start-date="filters?.start ?? ''"
+        :initial-end-date="filters?.end ?? ''"
+        @update:dateRange="onDateRangeChange"
       />
     </div>
 
     <DataTable 
-      :data="filteredVehicles" 
+      :data="vehicles.data" 
       :columns="columns" 
-      :items-per-page="10" 
+      :server-side="true"
+      :meta="paginationMeta"
       @delete="confirmDelete"
       @edit="editVehicle"
+      @page-change="onPageChange"
     />
 
     <div v-if="isModalOpen" class="fixed inset-0 flex items-center justify-center z-50">

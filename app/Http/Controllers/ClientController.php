@@ -8,14 +8,30 @@ use Illuminate\Support\Facades\Redirect;
 
 class ClientController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $query = Client::withCount('vehicle')
+            ->orderBy('registered_at', 'desc')
+            ->orderBy('id', 'desc');
+
+        if ($request->filled('q')) {
+            $search = $request->input('q');
+            $query->where(function ($qb) use ($search) {
+                $qb->where('DNI', 'LIKE', "%{$search}%")
+                   ->orWhere('name', 'LIKE', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('start')) {
+            $query->whereDate('registered_at', '>=', $request->input('start'));
+        }
+        if ($request->filled('end')) {
+            $query->whereDate('registered_at', '<=', $request->input('end'));
+        }
 
         return Inertia::render('Clients/Index', [
-            'clients' => Client::withCount('vehicle')
-                ->orderBy('registered_at', 'desc')
-                ->orderBy('id', 'desc')
-                ->get()
+            'clients' => $query->paginate(10)->withQueryString(),
+            'filters' => $request->only(['q', 'start', 'end']),
         ]);
     }
 

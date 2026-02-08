@@ -1,6 +1,6 @@
 <script setup>
 import { Head, router, useForm } from "@inertiajs/vue3";
-import { ref, watch, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import DataTable from "@/Components/DataTable.vue";
 import DateRangeSearch from "@/Components/DateRangeSearch.vue";
 import DarkButton from "@/Components/DarkButton.vue";
@@ -14,7 +14,7 @@ import AddButton from '@/Components/AddButton.vue';
 
 const props = defineProps({
   delivery_notes: {
-    type: Array,
+    type: Object,
     required: true,
   },
   suppliers: {
@@ -24,6 +24,14 @@ const props = defineProps({
   families: {
     type: Array,
     required: true,
+  },
+  totals: {
+    type: Object,
+    required: true,
+  },
+  filters: {
+    type: Object,
+    default: () => ({}),
   },
 });
 
@@ -45,9 +53,15 @@ const formatDate = (dateString) => {
   });
 };
 
+function formatType(type) {
+  if (type === 'corrective') return 'Correctivo';
+  if (type === 'generic') return 'Genérico';
+  return type;
+}
+
 const columns = [
   { key: "id", label: "ID" },
-  { key: "type", label: "Tipo" },
+  { key: "type", label: "Tipo", formatter: formatType },
   { key: "supplier", label: "Proveedor" },
   { key: "family", label: "Familia" },
   { key: "quantity", label: "Cantidad" },
@@ -63,11 +77,13 @@ const columns = [
   },
 ];
 
-const searchQuery = ref("");
+// Filter state — initialized from server-provided filters
+const searchQuery = ref(props.filters?.q ?? "");
 const dateRange = ref({
-  startDate: "",
-  endDate: "",
+  startDate: props.filters?.start ?? "",
+  endDate: props.filters?.end ?? "",
 });
+
 const isModalOpen = ref(false);
 const isNewSupplierModalOpen = ref(false);
 const isNewFamilyModalOpen = ref(false);
@@ -121,68 +137,61 @@ watch(() => form.cost, (newCost) => {
   }
 });
 
-function formatType(type) {
-  if (type === 'corrective') return 'Correctivo';
-  if (type === 'generic') return 'Genérico';
-  return type;
+// ── Server-side data fetching ──────────────────────────────────────
+
+function fetchData(page = null) {
+  const params = {};
+
+  if (searchQuery.value) {
+    params.q = searchQuery.value;
+  }
+  if (dateRange.value.startDate) {
+    params.start = dateRange.value.startDate;
+  }
+  if (dateRange.value.endDate) {
+    params.end = dateRange.value.endDate;
+  }
+  if (page && page > 1) {
+    params.page = page;
+  }
+
+  router.get(route('delivery_notes.index'), params, {
+    preserveState: true,
+    preserveScroll: true,
+    only: ['delivery_notes', 'totals', 'filters'],
+  });
 }
 
-const filteredDeliveryNotes = computed(() => {
-  let filteredNotes = [...props.delivery_notes];
+// Debounced search
+let searchTimeout = null;
+function onSearchInput() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    fetchData(1);
+  }, 300);
+}
 
-  filteredNotes = filteredNotes.map(note => ({
-    ...note,
-    type: formatType(note.type)
-  }));
+function onDateRangeChange(newRange) {
+  dateRange.value = newRange;
+  fetchData(1);
+}
 
-  // Filter by date range
-  if (dateRange.value.startDate || dateRange.value.endDate) {
-    filteredNotes = filteredNotes.filter((note) => {
-      const addedDate = new Date(note.added_at);
-      const startDate = dateRange.value.startDate
-        ? new Date(dateRange.value.startDate)
-        : null;
-      const endDate = dateRange.value.endDate ? new Date(dateRange.value.endDate) : null;
+function onPageChange(page) {
+  fetchData(page);
+}
 
-      if (startDate && endDate) {
-        return addedDate >= startDate && addedDate <= endDate;
-      } else if (startDate) {
-        return addedDate >= startDate;
-      } else if (endDate) {
-        return addedDate <= endDate;
-      }
+// ── Pagination meta for DataTable ──────────────────────────────────
 
-      return true;
-    });
-  }
+const paginationMeta = computed(() => ({
+  current_page: props.delivery_notes.current_page,
+  last_page: props.delivery_notes.last_page,
+  from: props.delivery_notes.from,
+  to: props.delivery_notes.to,
+  total: props.delivery_notes.total,
+  per_page: props.delivery_notes.per_page,
+}));
 
-  // Filter by search query (family or supplier)
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    filteredNotes = filteredNotes.filter(
-      (note) =>
-        note.family.toLowerCase().includes(query) ||
-        note.supplier.toLowerCase().includes(query)
-    );
-  }
-
-  return filteredNotes;
-});
-
-const totals = computed(() => {
-  const filteredData = filteredDeliveryNotes.value;
-  const totalSold = filteredData.reduce((sum, note) => sum + parseFloat(note.RRP || 0), 0);
-  const totalSpent = filteredData.reduce((sum, note) => sum + parseFloat(note.cost || 0), 0);
-  const totalProfit = filteredData.reduce((sum, note) => sum + parseFloat(note.profit || 0), 0);
-  const totalMargin =
-    totalSold > 0 ? (totalProfit / totalSold) * 100 : 0;
-  return {
-    totalSold,
-    totalSpent,
-    totalProfit,
-    totalMargin,
-  };
-});
+// ── CRUD ────────────────────────────────────────────────────────────
 
 function addNewDeliveryNote() {
   isEditing.value = false;
@@ -197,7 +206,7 @@ function editDeliveryNote(deliveryNote) {
   isEditing.value = true;
   form.reset();
   form.id = deliveryNote.id;
-  form.type = deliveryNote.type === 'Genérico' ? 'generic' : (deliveryNote.type === 'Correctivo' ? 'corrective' : deliveryNote.type);
+  form.type = deliveryNote.type;
   form.supplier = deliveryNote.supplier;
   form.family = deliveryNote.family;
   form.quantity = deliveryNote.quantity;
@@ -303,6 +312,7 @@ function deleteDeliveryNote() {
         <input
           type="text"
           v-model="searchQuery"
+          @input="onSearchInput"
           placeholder="Buscar por familia o proveedor..."
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
@@ -312,7 +322,9 @@ function deleteDeliveryNote() {
       <DateRangeSearch
         start-label="Fecha de alta desde"
         end-label="Fecha de alta hasta"
-        @update:dateRange="(newRange) => (dateRange = newRange)"
+        :initial-start-date="filters?.start ?? ''"
+        :initial-end-date="filters?.end ?? ''"
+        @update:dateRange="onDateRangeChange"
       />
     </div>
 
@@ -341,11 +353,13 @@ function deleteDeliveryNote() {
     </div>
 
     <DataTable 
-      :data="filteredDeliveryNotes" 
+      :data="delivery_notes.data" 
       :columns="columns" 
-      :items-per-page="10"
+      :server-side="true"
+      :meta="paginationMeta"
       @delete="confirmDelete"
-      @edit="editDeliveryNote" 
+      @edit="editDeliveryNote"
+      @page-change="onPageChange"
     />
 
     <div v-if="isModalOpen" class="fixed inset-0 flex items-center justify-center z-50">

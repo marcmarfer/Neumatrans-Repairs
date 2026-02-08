@@ -14,12 +14,9 @@ use Illuminate\Support\Str;
 
 class RepairController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $repair_types = RepairType::with('repairTypeStep')->select('id', 'name')->orderBy('name')->get();
-
-        return Inertia::render('Repairs/Index', [
-            'repairs' => Repair::with([
+        $baseQuery = Repair::with([
                 'repairType:id,name',
                 'vehicle:id,plate_number,client_id,brand_id,model_id',
                 'vehicle.client:id,name',
@@ -27,14 +24,51 @@ class RepairController extends Controller
                 'vehicle.model:id,name',
                 'repairOrder:id,client_id,status'
             ])
-                ->orderBy('started_at', 'desc')
-                ->orderBy('id', 'desc')
-                ->get(),
+            ->orderBy('started_at', 'desc')
+            ->orderBy('id', 'desc');
+
+        if ($request->filled('q')) {
+            $search = $request->input('q');
+            $baseQuery->where(function ($qb) use ($search) {
+                $qb->whereHas('vehicle', function ($q) use ($search) {
+                    $q->where('plate_number', 'LIKE', "%{$search}%");
+                })->orWhereHas('vehicle.client', function ($q) use ($search) {
+                    $q->where('name', 'LIKE', "%{$search}%");
+                });
+            });
+        }
+
+        if ($request->filled('start')) {
+            $baseQuery->whereDate('started_at', '>=', $request->input('start'));
+        }
+        if ($request->filled('end')) {
+            $baseQuery->whereDate('started_at', '<=', $request->input('end'));
+        }
+
+        // Tab counts (on the filtered base query, before tab split)
+        $inProgressCount = (clone $baseQuery)->whereNull('completed_at')->count();
+        $completedCount = (clone $baseQuery)->whereNotNull('completed_at')->count();
+
+        // Apply tab filter
+        $tab = $request->input('tab', 'in_progress');
+        if ($tab === 'completed') {
+            $baseQuery->whereNotNull('completed_at');
+        } else {
+            $baseQuery->whereNull('completed_at');
+        }
+
+        $repair_types = RepairType::with('repairTypeStep')->select('id', 'name')->orderBy('name')->get();
+
+        return Inertia::render('Repairs/Index', [
+            'repairs' => $baseQuery->paginate(10)->withQueryString(),
+            'in_progress_count' => $inProgressCount,
+            'completed_count' => $completedCount,
             'vehicles' => Vehicle::with(['client:id,name', 'brand:id,name', 'model:id,name,brand_id'])
                 ->orderBy('added_at', 'desc')
                 ->get(),
             'repair_types' => $repair_types,
             'repair_orders' => RepairOrder::with('client:id,name')->orderBy('id', 'desc')->get(),
+            'filters' => $request->only(['q', 'start', 'end', 'tab']),
         ]);
     }
 

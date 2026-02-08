@@ -14,23 +14,61 @@ class DeliveryNoteController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $delivery_notes = DeliveryNote::select([
-            'id', 'type', 'supplier', 'family', 'quantity', 
+        $query = DeliveryNote::query()
+            ->orderBy('added_at', 'desc')
+            ->orderBy('id', 'desc');
+
+        // Search filter: supplier or family (LIKE)
+        if ($request->filled('q')) {
+            $search = $request->input('q');
+            $query->where(function ($qb) use ($search) {
+                $qb->where('supplier', 'LIKE', "%{$search}%")
+                   ->orWhere('family', 'LIKE', "%{$search}%");
+            });
+        }
+
+        // Date range filters
+        if ($request->filled('start')) {
+            $query->whereDate('added_at', '>=', $request->input('start'));
+        }
+        if ($request->filled('end')) {
+            $query->whereDate('added_at', '<=', $request->input('end'));
+        }
+
+        // Compute totals on the full filtered set (before pagination)
+        $totalsRow = (clone $query)->selectRaw('
+            COALESCE(SUM(RRP), 0) as total_sold,
+            COALESCE(SUM(cost), 0) as total_spent,
+            COALESCE(SUM(profit), 0) as total_profit
+        ')->first();
+
+        $totalSold = (float) $totalsRow->total_sold;
+        $totalSpent = (float) $totalsRow->total_spent;
+        $totalProfit = (float) $totalsRow->total_profit;
+        $totalMargin = $totalSold > 0 ? ($totalProfit / $totalSold) * 100 : 0;
+
+        // Paginate with only needed columns
+        $delivery_notes = $query->select([
+            'id', 'type', 'supplier', 'family', 'quantity',
             'unitary_price', 'RRP', 'cost', 'margin', 'profit', 'added_at'
-        ])
-        ->orderBy('added_at', 'desc')
-        ->orderBy('id', 'desc')
-        ->get();
-        
+        ])->paginate(10)->withQueryString();
+
         $suppliers = Supplier::select('id', 'name')->orderBy('name')->get();
         $families = Family::select('id', 'name')->orderBy('name')->get();
-        
+
         return Inertia::render('DeliveryNotes/Index', [
             'delivery_notes' => $delivery_notes,
             'suppliers' => $suppliers,
             'families' => $families,
+            'totals' => [
+                'totalSold' => $totalSold,
+                'totalSpent' => $totalSpent,
+                'totalProfit' => $totalProfit,
+                'totalMargin' => $totalMargin,
+            ],
+            'filters' => $request->only(['q', 'start', 'end']),
         ]);
     }
 

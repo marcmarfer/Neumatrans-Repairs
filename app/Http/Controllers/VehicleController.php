@@ -11,16 +11,35 @@ use Illuminate\Support\Facades\Redirect;
 
 class VehicleController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $query = Vehicle::with(['client:id,name,DNI', 'brand:id,name', 'model:id,name,brand_id'])
+            ->orderBy('added_at', 'desc')
+            ->orderBy('id', 'desc');
+
+        if ($request->filled('q')) {
+            $search = $request->input('q');
+            $query->where(function ($qb) use ($search) {
+                $qb->where('plate_number', 'LIKE', "%{$search}%")
+                   ->orWhereHas('client', function ($q) use ($search) {
+                       $q->where('name', 'LIKE', "%{$search}%");
+                   });
+            });
+        }
+
+        if ($request->filled('start')) {
+            $query->whereDate('added_at', '>=', $request->input('start'));
+        }
+        if ($request->filled('end')) {
+            $query->whereDate('added_at', '<=', $request->input('end'));
+        }
+
         return Inertia::render('Vehicles/Index', [
-            'vehicles' => Vehicle::with(['client:id,name,DNI', 'brand:id,name', 'model:id,name,brand_id'])
-                ->orderBy('added_at', 'desc')
-                ->orderBy('id', 'desc')
-                ->get(),
+            'vehicles' => $query->paginate(10)->withQueryString(),
             'clients' => Client::select('id', 'name', 'DNI')->orderBy('name')->get(),
             'brands' => Brand::select('id', 'name')->orderBy('name')->get(),
             'models' => VehicleModel::select('id', 'name', 'brand_id')->orderBy('name')->get(),
+            'filters' => $request->only(['q', 'start', 'end']),
         ]);
     }
 

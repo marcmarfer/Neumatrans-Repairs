@@ -11,8 +11,16 @@ import GoBackButton from "@/Components/GoBackButton.vue";
 import DeleteButton from "@/Components/DeleteButton.vue";
 const props = defineProps({
   repairs: {
-    type: Array,
+    type: Object,
     required: true,
+  },
+  in_progress_count: {
+    type: Number,
+    default: 0,
+  },
+  completed_count: {
+    type: Number,
+    default: 0,
   },
   vehicles: {
     type: Array,
@@ -25,6 +33,10 @@ const props = defineProps({
   repair_orders: {
     type: Array,
     required: true,
+  },
+  filters: {
+    type: Object,
+    default: () => ({}),
   },
 });
 
@@ -71,17 +83,17 @@ const completedColumns = [
   },
 ];
 
-const searchQuery = ref("");
+const searchQuery = ref(props.filters?.q ?? "");
 const dateRange = ref({
-  startDate: "",
-  endDate: "",
+  startDate: props.filters?.start ?? "",
+  endDate: props.filters?.end ?? "",
 });
 const isModalOpen = ref(false);
 const isDeleteModalOpen = ref(false);
 const repairToDelete = ref(null);
 const typeSteps = ref([]);
 const isEditing = ref(false);
-const activeTab = ref("inProgress");
+const activeTab = ref(props.filters?.tab === 'completed' ? 'completed' : 'inProgress');
 const activeCategory = ref("individual");
 const filteredRepairOrders = ref([]);
 
@@ -107,32 +119,48 @@ const vehicleOptions = computed(() => props.vehicles.map(vehicle => {
   return { ...vehicle, displayName: full };
 }));
 
-const filteredRepairs = computed(() => {
-  let filtered = props.repairs;
-  if (dateRange.value.startDate || dateRange.value.endDate) {
-    filtered = filtered.filter((repair) => {
-      const startedDate = new Date(repair.started_at);
-      const startDate = dateRange.value.startDate ? new Date(dateRange.value.startDate) : null;
-      const endDate = dateRange.value.endDate ? new Date(dateRange.value.endDate) : null;
-      if (startDate && endDate) return startedDate >= startDate && startedDate <= endDate;
-      if (startDate) return startedDate >= startDate;
-      if (endDate) return startedDate <= endDate;
-      return true;
-    });
-  }
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    filtered = filtered.filter(
-      (repair) =>
-        repair.vehicle?.client?.name?.toLowerCase().includes(query) ||
-        repair.vehicle?.plate_number?.toLowerCase().includes(query)
-    );
-  }
-  return filtered;
-});
+// ── Server-side data fetching ──────────────────────────────────────
 
-const inProgressRepairs = computed(() => filteredRepairs.value.filter(repair => !repair.completed_at));
-const completedRepairs = computed(() => filteredRepairs.value.filter(repair => repair.completed_at));
+const paginationMeta = computed(() => ({
+  current_page: props.repairs.current_page,
+  last_page: props.repairs.last_page,
+  from: props.repairs.from,
+  to: props.repairs.to,
+  total: props.repairs.total,
+  per_page: props.repairs.per_page,
+}));
+
+function fetchData(page = null) {
+  const params = {};
+  if (searchQuery.value) params.q = searchQuery.value;
+  if (dateRange.value.startDate) params.start = dateRange.value.startDate;
+  if (dateRange.value.endDate) params.end = dateRange.value.endDate;
+  params.tab = activeTab.value === 'completed' ? 'completed' : 'in_progress';
+  if (page && page > 1) params.page = page;
+
+  router.get(route('repairs.index'), params, {
+    preserveState: true,
+    preserveScroll: true,
+    only: ['repairs', 'in_progress_count', 'completed_count', 'filters'],
+  });
+}
+
+let searchTimeout = null;
+function onSearchInput() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    fetchData(1);
+  }, 300);
+}
+
+function onDateRangeChange(newRange) {
+  dateRange.value = newRange;
+  fetchData(1);
+}
+
+function onPageChange(page) {
+  fetchData(page);
+}
 
 watch(() => form.repair_type_id, (newTypeId) => {
   if (newTypeId) {
@@ -171,6 +199,7 @@ watch(() => form.vehicle_id, (newVehicleId) => {
 
 function setActiveTab(tab) {
   activeTab.value = tab;
+  fetchData(1);
 }
 
 function setActiveCategory(category) {
@@ -275,6 +304,7 @@ function deleteRepair() {
         <input
           type="text"
           v-model="searchQuery"
+          @input="onSearchInput"
           placeholder="Buscar por cliente o matrícula..."
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
@@ -284,7 +314,9 @@ function deleteRepair() {
       <DateRangeSearch
         start-label="Fecha de inicio desde"
         end-label="Fecha de inicio hasta"
-        @update:dateRange="(newRange) => (dateRange = newRange)"
+        :initial-start-date="filters?.start ?? ''"
+        :initial-end-date="filters?.end ?? ''"
+        @update:dateRange="onDateRangeChange"
       />
     </div>
 
@@ -326,7 +358,7 @@ function deleteRepair() {
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
           ]"
         >
-          En Progreso ({{ inProgressRepairs.length }})
+          En Progreso ({{ in_progress_count }})
         </button>
         <button
           @click="setActiveTab('completed')"
@@ -337,36 +369,23 @@ function deleteRepair() {
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
           ]"
         >
-          Completadas ({{ completedRepairs.length }})
+          Completadas ({{ completed_count }})
         </button>
       </div>
     </div>
 
-    <div v-if="activeTab === 'inProgress'">
-      <DataTable 
-        :data="inProgressRepairs" 
-        :columns="columns" 
-        :items-per-page="10" 
-        @delete="confirmDelete"
-        @edit="editRepair"
-      />
-      <p v-if="inProgressRepairs.length === 0" class="text-center text-gray-500 my-8">
-        No hay reparaciones en progreso
-      </p>
-    </div>
-
-    <div v-if="activeTab === 'completed'">
-      <DataTable 
-        :data="completedRepairs" 
-        :columns="completedColumns" 
-        :items-per-page="10" 
-        @delete="confirmDelete"
-        @edit="editRepair"
-      />
-      <p v-if="completedRepairs.length === 0" class="text-center text-gray-500 my-8">
-        No hay reparaciones completadas
-      </p>
-    </div>
+    <DataTable 
+      :data="repairs.data" 
+      :columns="activeTab === 'completed' ? completedColumns : columns" 
+      :server-side="true"
+      :meta="paginationMeta"
+      @delete="confirmDelete"
+      @edit="editRepair"
+      @page-change="onPageChange"
+    />
+    <p v-if="repairs.data.length === 0" class="text-center text-gray-500 my-8">
+      {{ activeTab === 'inProgress' ? 'No hay reparaciones en progreso' : 'No hay reparaciones completadas' }}
+    </p>
 
     <div v-if="isModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
       <div class="fixed inset-0 bg-black opacity-50" @click="closeModal"></div>

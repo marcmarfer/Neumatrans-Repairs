@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from "vue";
+import { ref, computed, watch } from "vue";
 
 const props = defineProps({
   data: {
@@ -14,17 +14,70 @@ const props = defineProps({
     type: Number,
     default: 10,
   },
+  serverSide: {
+    type: Boolean,
+    default: false,
+  },
+  meta: {
+    type: Object,
+    default: null,
+  },
 });
 
-const emit = defineEmits(["delete", "edit", "complete", "resend"]);
+const emit = defineEmits(["delete", "edit", "complete", "resend", "page-change"]);
 
 const currentPage = ref(1);
 
-const getTotalItems = () => props.data.length;
-const getTotalPages = () => Math.ceil(getTotalItems() / props.itemsPerPage);
+watch(
+  () => props.data.length,
+  () => {
+    if (!props.serverSide) {
+      currentPage.value = 1;
+    }
+  }
+);
 
-const getStartIndex = () => (currentPage.value - 1) * props.itemsPerPage;
-const getEndIndex = () => Math.min(getStartIndex() + props.itemsPerPage, getTotalItems());
+watch(
+  () => props.meta?.current_page,
+  (newPage) => {
+    if (props.serverSide && newPage) {
+      currentPage.value = newPage;
+    }
+  },
+  { immediate: true }
+);
+
+const totalItems = computed(() => {
+  return props.serverSide ? (props.meta?.total ?? 0) : props.data.length;
+});
+
+const totalPages = computed(() => {
+  if (props.serverSide) {
+    return props.meta?.last_page ?? 1;
+  }
+  return Math.ceil(totalItems.value / props.itemsPerPage);
+});
+
+const startIndex = computed(() => {
+  if (props.serverSide) {
+    return props.meta?.from ? props.meta.from - 1 : 0;
+  }
+  return (currentPage.value - 1) * props.itemsPerPage;
+});
+
+const endIndex = computed(() => {
+  if (props.serverSide) {
+    return props.meta?.to ?? 0;
+  }
+  return Math.min(startIndex.value + props.itemsPerPage, totalItems.value);
+});
+
+const paginatedData = computed(() => {
+  if (props.serverSide) {
+    return props.data;
+  }
+  return props.data.slice(startIndex.value, endIndex.value);
+});
 
 const getNestedValue = (obj, path) => {
   return path
@@ -32,20 +85,16 @@ const getNestedValue = (obj, path) => {
     .reduce((current, key) => (current ? current[key] : undefined), obj);
 };
 
-const getPaginatedData = () => {
-  return props.data.slice(getStartIndex(), getEndIndex());
-};
-
-const getDisplayedPages = () => {
+const displayedPages = computed(() => {
   const delta = 2;
   const range = [];
   const rangeWithDots = [];
   let l;
 
-  for (let i = 1; i <= getTotalPages(); i++) {
+  for (let i = 1; i <= totalPages.value; i++) {
     if (
       i === 1 ||
-      i === getTotalPages() ||
+      i === totalPages.value ||
       (i >= currentPage.value - delta && i <= currentPage.value + delta)
     ) {
       range.push(i);
@@ -65,23 +114,37 @@ const getDisplayedPages = () => {
   });
 
   return rangeWithDots;
-};
+});
 
 const previousPage = () => {
   if (currentPage.value > 1) {
-    currentPage.value--;
+    const newPage = currentPage.value - 1;
+    if (props.serverSide) {
+      emit("page-change", newPage);
+    } else {
+      currentPage.value = newPage;
+    }
   }
 };
 
 const nextPage = () => {
-  if (currentPage.value < getTotalPages()) {
-    currentPage.value++;
+  if (currentPage.value < totalPages.value) {
+    const newPage = currentPage.value + 1;
+    if (props.serverSide) {
+      emit("page-change", newPage);
+    } else {
+      currentPage.value = newPage;
+    }
   }
 };
 
 const goToPage = (page) => {
   if (typeof page === "number") {
-    currentPage.value = page;
+    if (props.serverSide) {
+      emit("page-change", page);
+    } else {
+      currentPage.value = page;
+    }
   }
 };
 
@@ -123,7 +186,7 @@ const handleResend = (item) => {
       </thead>
       <tbody class="bg-white">
         <tr
-          v-for="item in getPaginatedData()"
+          v-for="item in paginatedData"
           :key="item.id"
           class="hover:bg-gray-50 border-b border-gray-200"
         >
@@ -198,9 +261,9 @@ const handleResend = (item) => {
         </button>
         <button
           @click="nextPage"
-          :disabled="currentPage >= getTotalPages()"
+          :disabled="currentPage >= totalPages"
           class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-          :class="{ 'opacity-50 cursor-not-allowed': currentPage >= getTotalPages() }"
+          :class="{ 'opacity-50 cursor-not-allowed': currentPage >= totalPages }"
         >
           Siguiente
         </button>
@@ -209,11 +272,11 @@ const handleResend = (item) => {
         <div>
           <p class="text-sm text-gray-700">
             Mostrando
-            <span class="font-medium">{{ getStartIndex() + 1 }}</span>
+            <span class="font-medium">{{ startIndex + 1 }}</span>
             a
-            <span class="font-medium">{{ getEndIndex() }}</span>
+            <span class="font-medium">{{ endIndex }}</span>
             de
-            <span class="font-medium">{{ getTotalItems() }}</span>
+            <span class="font-medium">{{ totalItems }}</span>
             resultados
           </p>
         </div>
@@ -240,7 +303,7 @@ const handleResend = (item) => {
               </svg>
             </button>
             <button
-              v-for="page in getDisplayedPages()"
+              v-for="page in displayedPages"
               :key="page"
               @click="goToPage(page)"
               :class="[
@@ -254,9 +317,9 @@ const handleResend = (item) => {
             </button>
             <button
               @click="nextPage"
-              :disabled="currentPage >= getTotalPages()"
+              :disabled="currentPage >= totalPages"
               class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-              :class="{ 'opacity-50 cursor-not-allowed': currentPage >= getTotalPages() }"
+              :class="{ 'opacity-50 cursor-not-allowed': currentPage >= totalPages }"
             >
               <span class="sr-only">Siguiente</span>
               <svg

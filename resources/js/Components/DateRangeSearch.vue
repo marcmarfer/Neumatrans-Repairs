@@ -10,13 +10,21 @@ const props = defineProps({
     endLabel: {
         type: String,
         default: 'End Date'
+    },
+    initialStartDate: {
+        type: String,
+        default: ''
+    },
+    initialEndDate: {
+        type: String,
+        default: ''
     }
 });
 
 const emit = defineEmits(['update:dateRange']);
 
-const startDate = ref('');
-const endDate = ref('');
+const startDate = ref(props.initialStartDate);
+const endDate = ref(props.initialEndDate);
 
 watch([startDate, endDate], ([newStartDate, newEndDate]) => {
     emit('update:dateRange', {

@@ -19,13 +19,49 @@ use Illuminate\Support\Facades\DB;
 
 class RepairOrderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $baseQuery = RepairOrder::with(['client', 'repairs.vehicle.brand', 'repairs.vehicle.model', 'repairs.repairType', 'createdBy'])
+            ->orderBy('id', 'desc');
+
+        if ($request->filled('q')) {
+            $search = $request->input('q');
+            $baseQuery->where(function ($qb) use ($search) {
+                $qb->whereHas('client', function ($q) use ($search) {
+                    $q->where('name', 'LIKE', "%{$search}%");
+                })->orWhereHas('repairs.vehicle', function ($q) use ($search) {
+                    $q->where('plate_number', 'LIKE', "%{$search}%");
+                });
+            });
+        }
+
+        if ($request->filled('start')) {
+            $baseQuery->whereDate('created_at', '>=', $request->input('start'));
+        }
+        if ($request->filled('end')) {
+            $baseQuery->whereDate('created_at', '<=', $request->input('end'));
+        }
+
+        // Tab counts
+        $inProgressCount = (clone $baseQuery)->whereNull('completed_at')->count();
+        $completedCount = (clone $baseQuery)->whereNotNull('completed_at')->count();
+
+        // Apply tab filter
+        $tab = $request->input('tab', 'in_progress');
+        if ($tab === 'completed') {
+            $baseQuery->whereNotNull('completed_at');
+        } else {
+            $baseQuery->whereNull('completed_at');
+        }
+
         return Inertia::render('RepairOrders/Index', [
-            'repair_orders' => RepairOrder::with(['client', 'repairs.vehicle.brand', 'repairs.vehicle.model', 'repairs.repairType', 'createdBy'])->get(),
+            'repair_orders' => $baseQuery->paginate(10)->withQueryString(),
+            'in_progress_count' => $inProgressCount,
+            'completed_count' => $completedCount,
             'clients' => Client::all(),
             'vehicles' => Vehicle::with(['client', 'brand', 'model'])->get(),
             'repair_types' => RepairType::all(),
+            'filters' => $request->only(['q', 'start', 'end', 'tab']),
         ]);
     }
 
