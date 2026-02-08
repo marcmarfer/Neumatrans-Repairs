@@ -5,94 +5,113 @@ on:
     branches:
       - develop
 
+concurrency:
+  group: laravel-prod-build
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@master
+        uses: shivammathur/setup-php@v2
         with:
           php-version: 8.3
-          extensions: mbstring, ctype, fileinfo, openssl, PDO, bcmath, json, tokenizer, xml
+          extensions: mbstring, ctype, fileinfo, openssl, pdo, pdo_mysql, bcmath, json, tokenizer, xml, curl, zip
 
       - name: Install Composer dependencies
-        run: COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-interaction --prefer-dist    
+        run: COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Install npm dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Create unified .env for build
-        run: |
-          echo "APP_ENV=${{ secrets.PROD_APP_ENV }}" >> .env
-          echo "VITE_APP_ENV=${{ secrets.PROD_VITE_APP_ENV }}" >> .env
-          echo "DB_CONNECTION=${{ secrets.PROD_DB_CONNECTION }}" >> .env
-          echo "DB_HOST=${{ secrets.PROD_DB_HOST }}" >> .env
-          echo "DB_PORT=${{ secrets.PROD_DB_PORT }}" >> .env
-          echo "DB_DATABASE=${{ secrets.PROD_DB_DATABASE }}" >> .env
-          echo "DB_USERNAME=${{ secrets.PROD_DB_USERNAME }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}" >> .env
-          echo "GEMINI_API_KEY=${{ secrets.PROD_GEMINI_API_KEY }}" >> .env
-          echo "OPENAI_API_KEY=${{ secrets.PROD_OPENAI_API_KEY }}" >> .env
-
-      - name: Build assets
+      - name: Build assets with Vite
+        env:
+          VITE_APP_ENV: ${{ secrets.PROD_VITE_APP_ENV }}
         run: npx vite build --mode prod
 
-      - name: Clean up
+      - name: Clean up before packaging
         run: |
           rm -rf node_modules
           rm -rf storage/app/public/activities
           rm -rf storage/app/public/certifications
           rm -rf storage/app/public/logos
           mkdir -p storage/app/private/orders/
-
-      - name: Remove Laravel cache files before packaging
-        run: |
           rm -f bootstrap/cache/*.php
 
-      - name: Archive application
-        run: tar -czf app.tgz ./*
+      - name: Archive application (excluding .env)
+        run: |
+          rm -f .env
+          tar -czf app.tgz \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='node_modules' \
+            .
 
-      - name: SSH SCP and deployment for prod
-        uses: appleboy/scp-action@master
+      - name: Upload files to server (SCP)
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.PROD_SSH_HOST }}
           username: ${{ secrets.PROD_SSH_USER }}
           password: ${{ secrets.PROD_SSH_PASSWORD }}
           port: ${{ secrets.PROD_SSH_PORT }}
           source: "app.tgz"
-          target: ${{ secrets.PROD_SSH_DIR }}
+          target: "/tmp"
 
-      - name: Execute remote production deployment commands
-        uses: appleboy/ssh-action@master
+      - name: Deploy on server
+        uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.PROD_SSH_HOST }}
           username: ${{ secrets.PROD_SSH_USER }}
           password: ${{ secrets.PROD_SSH_PASSWORD }}
           port: ${{ secrets.PROD_SSH_PORT }}
           script: |
-            set -e
-            set -x
-            cd ${{ secrets.PROD_SSH_DIR }}
-            tar -xzf app.tgz
-            COMPOSER_ALLOW_SUPERUSER=1 composer install --optimize-autoloader --no-dev
-            php artisan config:clear
-            php artisan view:clear
-            php artisan cache:clear
+            set -euo pipefail
+
+            APP_DIR="${{ secrets.PROD_SSH_DIR }}"
+            TMP_DIR="/tmp/deploy-$(date +%s)"
+
+            [ -f "$APP_DIR/.env" ] || { echo "ERROR: missing $APP_DIR/.env"; exit 1; }
+
+            mkdir -p "$TMP_DIR"
+            tar -xzf /tmp/app.tgz -C "$TMP_DIR"
+            rm -f /tmp/app.tgz
+
+            # Put app in maintenance to avoid requests during deploy
+            cd "$APP_DIR"
+            php artisan down || true
+
+            # Sync code to prod, preserving .env and storage
+            rsync -a --delete \
+              --exclude=".env" \
+              --exclude="storage" \
+              --exclude="bootstrap/cache" \
+              --exclude="public/storage" \
+              "$TMP_DIR/" "$APP_DIR/"
+
+            # Run Laravel in prod
             php artisan migrate --force
-            php artisan storage:link
-            php artisan key:generate
+            php artisan storage:link || true
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
-            mkdir -p storage/framework/views
-            chown -R www-data:www-data storage
-            chmod -R 775 storage
+
+            # Ensure dirs and permissions (best-effort, no root)
+            mkdir -p storage/framework/views storage/framework/cache/data storage/logs bootstrap/cache
+            chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+
+            # Bring app back up
+            php artisan up || true
+
+            rm -rf "$TMP_DIR"

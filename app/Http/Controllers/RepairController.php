@@ -16,13 +16,25 @@ class RepairController extends Controller
 {
     public function index()
     {
-        $repair_types = RepairType::all();
-        
+        $repair_types = RepairType::with('repairTypeStep')->select('id', 'name')->orderBy('name')->get();
+
         return Inertia::render('Repairs/Index', [
-            'repairs' => Repair::with(['repairType', 'vehicle.client', 'repairOrder'])->get(),
-            'vehicles' => Vehicle::with(['client','brand','model'])->get(),
+            'repairs' => Repair::with([
+                'repairType:id,name',
+                'vehicle:id,plate_number,client_id,brand_id,model_id',
+                'vehicle.client:id,name',
+                'vehicle.brand:id,name',
+                'vehicle.model:id,name',
+                'repairOrder:id,client_id,status'
+            ])
+                ->orderBy('started_at', 'desc')
+                ->orderBy('id', 'desc')
+                ->get(),
+            'vehicles' => Vehicle::with(['client:id,name', 'brand:id,name', 'model:id,name,brand_id'])
+                ->orderBy('added_at', 'desc')
+                ->get(),
             'repair_types' => $repair_types,
-            'repair_orders' => RepairOrder::with('client')->get()
+            'repair_orders' => RepairOrder::with('client:id,name')->orderBy('id', 'desc')->get(),
         ]);
     }
 

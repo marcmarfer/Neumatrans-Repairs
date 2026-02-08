@@ -1,6 +1,6 @@
 <script setup>
 import { Head, router, useForm } from "@inertiajs/vue3";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import DataTable from "@/Components/DataTable.vue";
 import DateRangeSearch from "@/Components/DateRangeSearch.vue";
 import DarkButton from "@/Components/DarkButton.vue";
@@ -75,40 +75,29 @@ const form = useForm({
   registered_at: today,
 });
 
-function filterClients() {
-  let filteredClients = props.clients;
-
+const filteredClients = computed(() => {
+  let filtered = props.clients;
   if (dateRange.value.startDate || dateRange.value.endDate) {
-    filteredClients = filteredClients.filter((client) => {
+    filtered = filtered.filter((client) => {
       const registeredDate = new Date(client.registered_at);
-      const startDate = dateRange.value.startDate
-        ? new Date(dateRange.value.startDate)
-        : null;
+      const startDate = dateRange.value.startDate ? new Date(dateRange.value.startDate) : null;
       const endDate = dateRange.value.endDate ? new Date(dateRange.value.endDate) : null;
-
-      if (startDate && endDate) {
-        return registeredDate >= startDate && registeredDate <= endDate;
-      } else if (startDate) {
-        return registeredDate >= startDate;
-      } else if (endDate) {
-        return registeredDate <= endDate;
-      }
-
+      if (startDate && endDate) return registeredDate >= startDate && registeredDate <= endDate;
+      if (startDate) return registeredDate >= startDate;
+      if (endDate) return registeredDate <= endDate;
       return true;
     });
   }
-
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
-    filteredClients = filteredClients.filter(
+    filtered = filtered.filter(
       (client) =>
-        client.DNI.toLowerCase().includes(query) ||
-        client.name.toLowerCase().includes(query)
+        (client.DNI && client.DNI.toLowerCase().includes(query)) ||
+        (client.name && client.name.toLowerCase().includes(query))
     );
   }
-
-  return filteredClients;
-}
+  return filtered;
+});
 
 function addNewClient() {
   isEditing.value = false;
@@ -213,7 +202,7 @@ function formatPostalCode(event) {
     </div>
 
     <DataTable 
-      :data="filterClients()" 
+      :data="filteredClients" 
       :columns="columns" 
       :items-per-page="10"
       @delete="confirmDelete"

@@ -1,6 +1,6 @@
 <script setup>
 import { Head, router, useForm } from "@inertiajs/vue3";
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import DataTable from "@/Components/DataTable.vue";
 import DateRangeSearch from "@/Components/DateRangeSearch.vue";
 import DarkButton from "@/Components/DarkButton.vue";
@@ -27,13 +27,13 @@ const props = defineProps({
   },
 });
 
-function getSortedSuppliers() {
+const sortedSuppliers = computed(() => {
   return [...props.suppliers].sort((a, b) => a.name.localeCompare(b.name));
-}
+});
 
-function getSortedFamilies() {
+const sortedFamilies = computed(() => {
   return [...props.families].sort((a, b) => a.name.localeCompare(b.name));
-}
+});
 
 const formatDate = (dateString) => {
   if (!dateString) return '';
@@ -121,27 +121,13 @@ watch(() => form.cost, (newCost) => {
   }
 });
 
-function calculateTotals() {
-  const filteredData = filterDeliveryNotes();
-  return {
-    totalSold: filteredData.reduce((sum, note) => sum + parseFloat(note.RRP), 0),
-    totalSpent: filteredData.reduce((sum, note) => sum + parseFloat(note.cost), 0),
-    totalProfit: filteredData.reduce((sum, note) => sum + parseFloat(note.profit), 0),
-    averageMargin:
-      filteredData.length > 0
-        ? filteredData.reduce((sum, note) => sum + parseFloat(note.margin), 0) /
-          filteredData.length
-        : 0,
-  };
-}
-
 function formatType(type) {
   if (type === 'corrective') return 'Correctivo';
   if (type === 'generic') return 'Genérico';
   return type;
 }
 
-function filterDeliveryNotes() {
+const filteredDeliveryNotes = computed(() => {
   let filteredNotes = [...props.delivery_notes];
 
   filteredNotes = filteredNotes.map(note => ({
@@ -181,7 +167,22 @@ function filterDeliveryNotes() {
   }
 
   return filteredNotes;
-}
+});
+
+const totals = computed(() => {
+  const filteredData = filteredDeliveryNotes.value;
+  const totalSold = filteredData.reduce((sum, note) => sum + parseFloat(note.RRP || 0), 0);
+  const totalSpent = filteredData.reduce((sum, note) => sum + parseFloat(note.cost || 0), 0);
+  const totalProfit = filteredData.reduce((sum, note) => sum + parseFloat(note.profit || 0), 0);
+  const totalMargin =
+    totalSold > 0 ? (totalProfit / totalSold) * 100 : 0;
+  return {
+    totalSold,
+    totalSpent,
+    totalProfit,
+    totalMargin,
+  };
+});
 
 function addNewDeliveryNote() {
   isEditing.value = false;
@@ -320,27 +321,27 @@ function deleteDeliveryNote() {
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="p-4 bg-gray-50 rounded-lg">
           <p class="text-sm text-gray-600">Total Vendido (PVP)</p>
-          <p class="text-xl font-bold">{{ calculateTotals().totalSold.toFixed(2) }}€</p>
+          <p class="text-xl font-bold">{{ totals.totalSold.toFixed(2) }}€</p>
         </div>
         <div class="p-4 bg-gray-50 rounded-lg">
           <p class="text-sm text-gray-600">Total Gastado</p>
-          <p class="text-xl font-bold">{{ calculateTotals().totalSpent.toFixed(2) }}€</p>
+          <p class="text-xl font-bold">{{ totals.totalSpent.toFixed(2) }}€</p>
         </div>
         <div class="p-4 bg-gray-50 rounded-lg">
           <p class="text-sm text-gray-600">Beneficio Total</p>
-          <p class="text-xl font-bold">{{ calculateTotals().totalProfit.toFixed(2) }}€</p>
+          <p class="text-xl font-bold">{{ totals.totalProfit.toFixed(2) }}€</p>
         </div>
         <div class="p-4 bg-gray-50 rounded-lg">
-          <p class="text-sm text-gray-600">Margen Promedio</p>
+          <p class="text-sm text-gray-600">Margen Beneficio Total</p>
           <p class="text-xl font-bold">
-            {{ calculateTotals().averageMargin.toFixed(2) }}%
+            {{ totals.totalMargin.toFixed(2) }}%
           </p>
         </div>
       </div>
     </div>
 
     <DataTable 
-      :data="filterDeliveryNotes()" 
+      :data="filteredDeliveryNotes" 
       :columns="columns" 
       :items-per-page="10"
       @delete="confirmDelete"
@@ -396,7 +397,7 @@ function deleteDeliveryNote() {
                   <SearchableSelect
                     id="supplier"
                     v-model="form.supplier"
-                    :options="getSortedSuppliers()"
+                    :options="sortedSuppliers"
                     value-field="name"
                     label-field="name"
                     placeholder="Seleccione un proveedor"
@@ -417,7 +418,7 @@ function deleteDeliveryNote() {
                   <SearchableSelect
                     id="family"
                     v-model="form.family"
-                    :options="getSortedFamilies()"
+                    :options="sortedFamilies"
                     value-field="name"
                     label-field="name"
                     placeholder="Seleccione una familia"

@@ -16,9 +16,16 @@ class DeliveryNoteController extends Controller
      */
     public function index()
     {
-        $delivery_notes = DeliveryNote::all();
-        $suppliers = Supplier::all();
-        $families = Family::all();
+        $delivery_notes = DeliveryNote::select([
+            'id', 'type', 'supplier', 'family', 'quantity', 
+            'unitary_price', 'RRP', 'cost', 'margin', 'profit', 'added_at'
+        ])
+        ->orderBy('added_at', 'desc')
+        ->orderBy('id', 'desc')
+        ->get();
+        
+        $suppliers = Supplier::select('id', 'name')->orderBy('name')->get();
+        $families = Family::select('id', 'name')->orderBy('name')->get();
         
         return Inertia::render('DeliveryNotes/Index', [
             'delivery_notes' => $delivery_notes,

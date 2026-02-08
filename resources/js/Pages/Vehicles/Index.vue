@@ -1,6 +1,6 @@
 <script setup>
 import { Head, router, useForm } from "@inertiajs/vue3";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import DataTable from "@/Components/DataTable.vue";
 import DateRangeSearch from "@/Components/DateRangeSearch.vue";
 import DarkButton from "@/Components/DarkButton.vue";
@@ -66,48 +66,35 @@ const form = useForm({
   added_at: today,
 });
 
-function filteredModels() {
-  return form.brand_id
+const filteredModels = computed(() =>
+  form.brand_id
     ? props.models.filter((m) => m.brand_id === form.brand_id)
-    : [];
-}
+    : []
+);
 
-function filterVehicles() {
-  let filteredVehicles = props.vehicles;
-
-  // Filter by date range
+const filteredVehicles = computed(() => {
+  let filtered = props.vehicles;
   if (dateRange.value.startDate || dateRange.value.endDate) {
-    filteredVehicles = filteredVehicles.filter((vehicle) => {
+    filtered = filtered.filter((vehicle) => {
       const addedDate = new Date(vehicle.added_at);
-      const startDate = dateRange.value.startDate
-        ? new Date(dateRange.value.startDate)
-        : null;
+      const startDate = dateRange.value.startDate ? new Date(dateRange.value.startDate) : null;
       const endDate = dateRange.value.endDate ? new Date(dateRange.value.endDate) : null;
-
-      if (startDate && endDate) {
-        return addedDate >= startDate && addedDate <= endDate;
-      } else if (startDate) {
-        return addedDate >= startDate;
-      } else if (endDate) {
-        return addedDate <= endDate;
-      }
-
+      if (startDate && endDate) return addedDate >= startDate && addedDate <= endDate;
+      if (startDate) return addedDate >= startDate;
+      if (endDate) return addedDate <= endDate;
       return true;
     });
   }
-
-  // Filter by search query (client name or plate number)
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
-    filteredVehicles = filteredVehicles.filter(
+    filtered = filtered.filter(
       (vehicle) =>
         vehicle.client?.name?.toLowerCase().includes(query) ||
-        vehicle.plate_number.toLowerCase().includes(query)
+        (vehicle.plate_number && vehicle.plate_number.toLowerCase().includes(query))
     );
   }
-
-  return filteredVehicles;
-}
+  return filtered;
+});
 
 function addNewVehicle() {
   isEditing.value = false;
@@ -261,7 +248,7 @@ function submitNewModelForm() {
     </div>
 
     <DataTable 
-      :data="filterVehicles()" 
+      :data="filteredVehicles" 
       :columns="columns" 
       :items-per-page="10" 
       @delete="confirmDelete"
@@ -352,7 +339,7 @@ function submitNewModelForm() {
                   <SearchableSelect
                     id="model_id"
                     v-model="form.model_id"
-                    :options="filteredModels()"
+                    :options="filteredModels"
                     value-field="id"
                     label-field="name"
                     placeholder="Seleccione un modelo"

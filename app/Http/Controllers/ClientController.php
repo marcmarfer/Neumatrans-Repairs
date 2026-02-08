@@ -12,7 +12,10 @@ class ClientController extends Controller
     {
 
         return Inertia::render('Clients/Index', [
-            'clients' => Client::withCount('vehicle')->get()
+            'clients' => Client::withCount('vehicle')
+                ->orderBy('registered_at', 'desc')
+                ->orderBy('id', 'desc')
+                ->get()
         ]);
     }
 

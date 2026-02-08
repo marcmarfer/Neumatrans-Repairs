@@ -14,10 +14,13 @@ class VehicleController extends Controller
     public function index()
     {
         return Inertia::render('Vehicles/Index', [
-            'vehicles' => Vehicle::with(['client', 'brand', 'model'])->get(),
-            'clients' => Client::all(),
-            'brands' => Brand::all(),
-            'models' => VehicleModel::all(),
+            'vehicles' => Vehicle::with(['client:id,name,DNI', 'brand:id,name', 'model:id,name,brand_id'])
+                ->orderBy('added_at', 'desc')
+                ->orderBy('id', 'desc')
+                ->get(),
+            'clients' => Client::select('id', 'name', 'DNI')->orderBy('name')->get(),
+            'brands' => Brand::select('id', 'name')->orderBy('name')->get(),
+            'models' => VehicleModel::select('id', 'name', 'brand_id')->orderBy('name')->get(),
         ]);
     }
 

@@ -16,7 +16,7 @@ class DeliveryNoteFactory extends Factory
         $rrp = $quantity * $unitaryPrice;
         $cost = $this->faker->randomFloat(2, $unitaryPrice * 0.6, $unitaryPrice * 0.9);
         $profit = $rrp - $cost;
-        $margin = ($profit / $rrp) * 100;
+        $margin = $rrp > 0 ? ($profit / $rrp) * 100 : 0;
         
         return [
             'type' => $this->faker->randomElement(['generic', 'corrective']),
