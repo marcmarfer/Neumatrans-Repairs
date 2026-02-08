@@ -51,7 +51,7 @@ jobs:
       - name: Archive application (excluding .env)
         run: |
           rm -f .env
-          tar -czf app.tgz \
+          tar --warning=no-file-changed -czf app.tgz \
             --exclude='.git' \
             --exclude='.github' \
             --exclude='.env' \
@@ -88,11 +88,12 @@ jobs:
             tar -xzf /tmp/app.tgz -C "$TMP_DIR"
             rm -f /tmp/app.tgz
 
-            # Put app in maintenance to avoid requests during deploy
             cd "$APP_DIR"
             php artisan down || true
 
-            # Sync code to prod, preserving .env and storage
+            # Ensure we always bring the app back up, even if something fails
+            trap 'php artisan up || true' EXIT
+
             rsync -a --delete \
               --exclude=".env" \
               --exclude="storage" \
@@ -100,18 +101,15 @@ jobs:
               --exclude="public/storage" \
               "$TMP_DIR/" "$APP_DIR/"
 
-            # Run Laravel in prod
             php artisan migrate --force
             php artisan storage:link || true
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
 
-            # Ensure dirs and permissions (best-effort, no root)
             mkdir -p storage/framework/views storage/framework/cache/data storage/logs bootstrap/cache
             chmod -R 775 storage bootstrap/cache 2>/dev/null || true
 
-            # Bring app back up
-            php artisan up || true
-
             rm -rf "$TMP_DIR"
+            trap - EXIT
+            php artisan up || true

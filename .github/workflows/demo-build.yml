@@ -51,7 +51,7 @@ jobs:
       - name: Archive application (excluding .env)
         run: |
           rm -f .env
-          tar -czf app.tgz \
+          tar --warning=no-file-changed -czf app.tgz \
             --exclude='.git' \
             --exclude='.github' \
             --exclude='.env' \
@@ -91,6 +91,9 @@ jobs:
             cd "$APP_DIR"
             php artisan down || true
 
+            # Ensure we always bring the app back up, even if something fails
+            trap 'php artisan up || true' EXIT
+
             rsync -a --delete \
               --exclude=".env" \
               --exclude="storage" \
@@ -108,5 +111,6 @@ jobs:
             mkdir -p storage/framework/views storage/framework/cache/data storage/logs bootstrap/cache
             chmod -R 775 storage bootstrap/cache 2>/dev/null || true
 
-            php artisan up || true
             rm -rf "$TMP_DIR"
+            trap - EXIT
+            php artisan up || true
