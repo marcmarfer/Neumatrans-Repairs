@@ -10,6 +10,7 @@ import GoBackButton from "@/Components/GoBackButton.vue";
 import DeleteButton from "@/Components/DeleteButton.vue";
 import DNIInput from "@/Components/DNIInput.vue";
 import PhoneInput from "@/Components/PhoneInput.vue";
+import ExportButton from "@/Components/ExportButton.vue";
 
 const props = defineProps({
   clients: {
@@ -120,6 +121,15 @@ function onPageChange(page) {
   fetchData(page);
 }
 
+const exportUrl = computed(() => {
+  const params = new URLSearchParams();
+  if (searchQuery.value) params.set('q', searchQuery.value);
+  if (dateRange.value.startDate) params.set('start', dateRange.value.startDate);
+  if (dateRange.value.endDate) params.set('end', dateRange.value.endDate);
+  const query = params.toString();
+  return route('clients.exportCsv') + (query ? '?' + query : '');
+});
+
 function addNewClient() {
   isEditing.value = false;
   form.reset();
@@ -213,7 +223,10 @@ function formatPostalCode(event) {
           placeholder="Buscar por DNI o nombre..."
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
-        <DarkButton @click="addNewClient"> Añadir Cliente </DarkButton>
+        <div class="flex gap-4 w-full sm:w-auto justify-between sm:justify-end">
+          <DarkButton @click="addNewClient" class="sm:order-1"> Añadir Cliente </DarkButton>
+          <ExportButton :href="exportUrl" class="sm:order-2" />
+        </div>
       </div>
 
       <DateRangeSearch

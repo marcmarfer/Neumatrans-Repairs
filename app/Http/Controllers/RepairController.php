@@ -7,6 +7,7 @@ use App\Models\Vehicle;
 use App\Models\RepairType;
 use App\Models\RepairOrder;
 use App\Mail\RepairStatusNotification;
+use App\Traits\ExportsCsv;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Redirect;
@@ -14,22 +15,21 @@ use Illuminate\Support\Str;
 
 class RepairController extends Controller
 {
-    public function index(Request $request)
+    use ExportsCsv;
+
+    /**
+     * Build the base filtered query (search + date range) shared by index() and exportCsv().
+     * Does NOT apply tab or eager loading — callers add those.
+     */
+    private function buildFilteredQuery(Request $request)
     {
-        $baseQuery = Repair::with([
-                'repairType:id,name',
-                'vehicle:id,plate_number,client_id,brand_id,model_id',
-                'vehicle.client:id,name',
-                'vehicle.brand:id,name',
-                'vehicle.model:id,name',
-                'repairOrder:id,client_id,status'
-            ])
+        $query = Repair::query()
             ->orderBy('started_at', 'desc')
             ->orderBy('id', 'desc');
 
         if ($request->filled('q')) {
             $search = $request->input('q');
-            $baseQuery->where(function ($qb) use ($search) {
+            $query->where(function ($qb) use ($search) {
                 $qb->whereHas('vehicle', function ($q) use ($search) {
                     $q->where('plate_number', 'LIKE', "%{$search}%");
                 })->orWhereHas('vehicle.client', function ($q) use ($search) {
@@ -39,23 +39,47 @@ class RepairController extends Controller
         }
 
         if ($request->filled('start')) {
-            $baseQuery->whereDate('started_at', '>=', $request->input('start'));
+            $query->whereDate('started_at', '>=', $request->input('start'));
         }
         if ($request->filled('end')) {
-            $baseQuery->whereDate('started_at', '<=', $request->input('end'));
+            $query->whereDate('started_at', '<=', $request->input('end'));
         }
+
+        return $query;
+    }
+
+    /**
+     * Apply tab filter (in_progress / completed) to the query.
+     */
+    private function applyTabFilter($query, Request $request)
+    {
+        $tab = $request->input('tab', 'in_progress');
+        if ($tab === 'completed') {
+            $query->whereNotNull('completed_at');
+        } else {
+            $query->whereNull('completed_at');
+        }
+        return $query;
+    }
+
+    public function index(Request $request)
+    {
+        $baseQuery = $this->buildFilteredQuery($request)
+            ->with([
+                'repairType:id,name',
+                'vehicle:id,plate_number,client_id,brand_id,model_id',
+                'vehicle.client:id,name',
+                'vehicle.brand:id,name',
+                'vehicle.model:id,name',
+                'repairOrder:id,client_id,status'
+            ]);
 
         // Tab counts (on the filtered base query, before tab split)
         $inProgressCount = (clone $baseQuery)->whereNull('completed_at')->count();
         $completedCount = (clone $baseQuery)->whereNotNull('completed_at')->count();
 
         // Apply tab filter
-        $tab = $request->input('tab', 'in_progress');
-        if ($tab === 'completed') {
-            $baseQuery->whereNotNull('completed_at');
-        } else {
-            $baseQuery->whereNull('completed_at');
-        }
+        $this->applyTabFilter($baseQuery, $request);
 
         $repair_types = RepairType::with('repairTypeStep')->select('id', 'name')->orderBy('name')->get();
 
@@ -70,6 +94,38 @@ class RepairController extends Controller
             'repair_orders' => RepairOrder::with('client:id,name')->orderBy('id', 'desc')->get(),
             'filters' => $request->only(['q', 'start', 'end', 'tab']),
         ]);
+    }
+
+    public function exportCsv(Request $request)
+    {
+        $query = $this->buildFilteredQuery($request)
+            ->with([
+                'repairType:id,name',
+                'vehicle:id,plate_number,client_id,brand_id',
+                'vehicle.client:id,name',
+                'vehicle.brand:id,name',
+            ]);
+
+        $this->applyTabFilter($query, $request);
+
+        $records = $query->get();
+
+        return $this->streamCsv(
+            $records,
+            ['ID', 'Cliente', 'Marca', 'Matrícula', 'Tipo de Reparación', 'Orden de Reparación', 'Observaciones', 'Fecha de Inicio', 'Fecha de Finalización'],
+            fn ($r) => [
+                $r->id,
+                $r->vehicle->client->name ?? '',
+                $r->vehicle->brand->name ?? '',
+                $r->vehicle->plate_number ?? '',
+                $r->repairType->name ?? '',
+                $r->repair_order_id ? "Orden #{$r->repair_order_id}" : 'Sin asignar',
+                $r->observations,
+                $r->started_at,
+                $r->completed_at,
+            ],
+            'reparaciones.csv'
+        );
     }
 
     public function store(Request $request)

@@ -10,6 +10,7 @@ import DefaultSelect from "@/Components/DefaultSelect.vue";
 import SearchableSelect from "@/Components/SearchableSelect.vue";
 import GoBackButton from "@/Components/GoBackButton.vue";
 import DeleteButton from "@/Components/DeleteButton.vue";
+import ExportButton from "@/Components/ExportButton.vue";
 import axios from 'axios';
 
 const props = defineProps({
@@ -449,6 +450,16 @@ function cancelEditCompletion() {
   isEditCompletionModalOpen.value = false;
 }
 
+const exportUrl = computed(() => {
+  const params = new URLSearchParams();
+  if (searchQuery.value) params.set('q', searchQuery.value);
+  if (dateRange.value.startDate) params.set('start', dateRange.value.startDate);
+  if (dateRange.value.endDate) params.set('end', dateRange.value.endDate);
+  params.set('tab', activeTab.value === 'completed' ? 'completed' : 'in_progress');
+  const query = params.toString();
+  return route('repair-orders.exportCsv') + (query ? '?' + query : '');
+});
+
 function confirmEdit(sendEmail) {
   form.send_completion_email = sendEmail;
   form.put(route("repair-orders.update", form.id), {
@@ -477,7 +488,10 @@ function confirmEdit(sendEmail) {
           placeholder="Buscar por cliente o matrícula..."
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
-        <DarkButton @click="addNewRepairOrder"> Añadir Orden de Reparación </DarkButton>
+        <div class="flex gap-4 w-full sm:w-auto justify-between sm:justify-end">
+          <DarkButton @click="addNewRepairOrder" class="sm:order-1"> Añadir Orden de Reparación </DarkButton>
+          <ExportButton :href="exportUrl" class="sm:order-2" />
+        </div>
       </div>
 
       <DateRangeSearch

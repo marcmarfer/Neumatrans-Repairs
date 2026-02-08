@@ -6,14 +6,20 @@ use App\Models\Vehicle;
 use App\Models\Client;
 use App\Models\Brand;
 use App\Models\VehicleModel;
+use App\Traits\ExportsCsv;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 
 class VehicleController extends Controller
 {
-    public function index(Request $request)
+    use ExportsCsv;
+
+    /**
+     * Build the base filtered query shared by index() and exportCsv().
+     */
+    private function buildFilteredQuery(Request $request)
     {
-        $query = Vehicle::with(['client:id,name,DNI', 'brand:id,name', 'model:id,name,brand_id'])
+        $query = Vehicle::query()
             ->orderBy('added_at', 'desc')
             ->orderBy('id', 'desc');
 
@@ -34,6 +40,14 @@ class VehicleController extends Controller
             $query->whereDate('added_at', '<=', $request->input('end'));
         }
 
+        return $query;
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->buildFilteredQuery($request)
+            ->with(['client:id,name,DNI', 'brand:id,name', 'model:id,name,brand_id']);
+
         return Inertia::render('Vehicles/Index', [
             'vehicles' => $query->paginate(10)->withQueryString(),
             'clients' => Client::select('id', 'name', 'DNI')->orderBy('name')->get(),
@@ -41,6 +55,29 @@ class VehicleController extends Controller
             'models' => VehicleModel::select('id', 'name', 'brand_id')->orderBy('name')->get(),
             'filters' => $request->only(['q', 'start', 'end']),
         ]);
+    }
+
+    public function exportCsv(Request $request)
+    {
+        $records = $this->buildFilteredQuery($request)
+            ->with(['client:id,name', 'brand:id,name', 'model:id,name'])
+            ->get();
+
+        return $this->streamCsv(
+            $records,
+            ['ID', 'Cliente', 'Matrícula', 'Marca', 'Modelo', 'VIN', 'Tipo de Motor', 'Fecha de Alta'],
+            fn ($r) => [
+                $r->id,
+                $r->client->name ?? '',
+                $r->plate_number,
+                $r->brand->name ?? '',
+                $r->model->name ?? '',
+                $r->VIN,
+                $r->motor_type,
+                $r->added_at,
+            ],
+            'vehiculos.csv'
+        );
     }
 
     public function store(Request $request)

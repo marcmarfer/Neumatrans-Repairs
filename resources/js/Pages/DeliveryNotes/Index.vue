@@ -11,6 +11,7 @@ import SearchableSelect from "@/Components/SearchableSelect.vue";
 import GoBackButton from "@/Components/GoBackButton.vue";
 import DeleteButton from "@/Components/DeleteButton.vue";
 import AddButton from '@/Components/AddButton.vue';
+import ExportButton from '@/Components/ExportButton.vue';
 
 const props = defineProps({
   delivery_notes: {
@@ -180,6 +181,15 @@ function onPageChange(page) {
   fetchData(page);
 }
 
+const exportUrl = computed(() => {
+  const params = new URLSearchParams();
+  if (searchQuery.value) params.set('q', searchQuery.value);
+  if (dateRange.value.startDate) params.set('start', dateRange.value.startDate);
+  if (dateRange.value.endDate) params.set('end', dateRange.value.endDate);
+  const query = params.toString();
+  return route('delivery_notes.exportCsv') + (query ? '?' + query : '');
+});
+
 // ── Pagination meta for DataTable ──────────────────────────────────
 
 const paginationMeta = computed(() => ({
@@ -316,7 +326,10 @@ function deleteDeliveryNote() {
           placeholder="Buscar por familia o proveedor..."
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
-        <DarkButton @click="addNewDeliveryNote"> Añadir Referencia </DarkButton>
+        <div class="flex gap-4 w-full sm:w-auto justify-between sm:justify-end">
+          <DarkButton @click="addNewDeliveryNote" class="sm:order-1"> Añadir Referencia </DarkButton>
+          <ExportButton :href="exportUrl" class="sm:order-2" />
+        </div>
       </div>
 
       <DateRangeSearch

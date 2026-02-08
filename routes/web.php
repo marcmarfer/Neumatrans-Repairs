@@ -27,16 +27,19 @@ Route::middleware(['auth', 'verified', PreventIntegrationAccess::class])->group(
 
 //pages routes
 Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
+Route::get('/clients/export-csv', [ClientController::class, 'exportCsv'])->name('clients.exportCsv');
 Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
 Route::put('/clients/{client}', [ClientController::class, 'update'])->name('clients.update');
 Route::delete('/clients/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
 
 Route::get('/vehicles', [VehicleController::class, 'index'])->name('vehicles.index');
+Route::get('/vehicles/export-csv', [VehicleController::class, 'exportCsv'])->name('vehicles.exportCsv');
 Route::post('/vehicles', [VehicleController::class, 'store'])->name('vehicles.store');
 Route::put('/vehicles/{vehicle}', [VehicleController::class, 'update'])->name('vehicles.update');
 Route::delete('/vehicles/{vehicle}', [VehicleController::class, 'destroy'])->name('vehicles.destroy');
 
 Route::get('/repairs', [RepairController::class, 'index'])->name('repairs.index');
+Route::get('/repairs/export-csv', [RepairController::class, 'exportCsv'])->name('repairs.exportCsv');
 Route::post('/repairs', [RepairController::class, 'store'])->name('repairs.store');
 Route::put('/repairs/{repair}', [RepairController::class, 'update'])->name('repairs.update');
 Route::delete('/repairs/{repair}', [RepairController::class, 'destroy'])->name('repairs.destroy');
@@ -44,12 +47,14 @@ Route::get('/repair/track/{token}', [RepairTrackingController::class, 'index'])
     ->name('repairs.track');
 
 Route::get('/repair-orders', [RepairOrderController::class, 'index'])->name('repair-orders.index');
+Route::get('/repair-orders/export-csv', [RepairOrderController::class, 'exportCsv'])->name('repair-orders.exportCsv');
 Route::post('/repair-orders', [RepairOrderController::class, 'store'])->name('repair-orders.store');
 Route::put('/repair-orders/{repairOrder}', [RepairOrderController::class, 'update'])->name('repair-orders.update');
 Route::delete('/repair-orders/{repairOrder}', [RepairOrderController::class, 'destroy'])->name('repair-orders.destroy');
 Route::post('/repair-orders/{repairOrder}/resend-email', [RepairOrderController::class, 'resendEmail'])->name('repair-orders.resendEmail');
 
 Route::get('/delivery-notes', [DeliveryNoteController::class, 'index'])->name('delivery_notes.index');
+Route::get('/delivery-notes/export-csv', [DeliveryNoteController::class, 'exportCsv'])->name('delivery_notes.exportCsv');
 Route::post('/delivery-notes', [DeliveryNoteController::class, 'store'])->name('delivery_notes.store');
 Route::put('/delivery-notes/{deliveryNote}', [DeliveryNoteController::class, 'update'])->name('delivery_notes.update');
 Route::delete('/delivery-notes/{deliveryNote}', [DeliveryNoteController::class, 'destroy'])->name('delivery_notes.destroy');

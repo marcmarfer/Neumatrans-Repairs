@@ -11,6 +11,7 @@ import DeleteButton from "@/Components/DeleteButton.vue";
 import SearchableSelect from "@/Components/SearchableSelect.vue";
 import DefaultSelect from "@/Components/DefaultSelect.vue";
 import AddButton from '@/Components/AddButton.vue';
+import ExportButton from '@/Components/ExportButton.vue';
 const props = defineProps({
   vehicles: Object,
   clients: Array,
@@ -117,6 +118,15 @@ function onDateRangeChange(newRange) {
 function onPageChange(page) {
   fetchData(page);
 }
+
+const exportUrl = computed(() => {
+  const params = new URLSearchParams();
+  if (searchQuery.value) params.set('q', searchQuery.value);
+  if (dateRange.value.startDate) params.set('start', dateRange.value.startDate);
+  if (dateRange.value.endDate) params.set('end', dateRange.value.endDate);
+  const query = params.toString();
+  return route('vehicles.exportCsv') + (query ? '?' + query : '');
+});
 
 function addNewVehicle() {
   isEditing.value = false;
@@ -260,7 +270,10 @@ function submitNewModelForm() {
           placeholder="Buscar por cliente o matrícula..."
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
-        <DarkButton @click="addNewVehicle"> Añadir Vehículo </DarkButton>
+        <div class="flex gap-4 w-full sm:w-auto justify-between sm:justify-end">
+          <DarkButton @click="addNewVehicle" class="sm:order-1"> Añadir Vehículo </DarkButton>
+          <ExportButton :href="exportUrl" class="sm:order-2" />
+        </div>
       </div>
 
       <DateRangeSearch

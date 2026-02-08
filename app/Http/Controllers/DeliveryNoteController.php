@@ -6,21 +6,23 @@ use Illuminate\Http\Request;
 use App\Models\DeliveryNote;
 use App\Models\Supplier;
 use App\Models\Family;
+use App\Traits\ExportsCsv;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Redirect;
 
 class DeliveryNoteController extends Controller
 {
+    use ExportsCsv;
+
     /**
-     * Display a listing of the resource.
+     * Build the base filtered query shared by index() and exportCsv().
      */
-    public function index(Request $request)
+    private function buildFilteredQuery(Request $request)
     {
         $query = DeliveryNote::query()
             ->orderBy('added_at', 'desc')
             ->orderBy('id', 'desc');
 
-        // Search filter: supplier or family (LIKE)
         if ($request->filled('q')) {
             $search = $request->input('q');
             $query->where(function ($qb) use ($search) {
@@ -29,7 +31,6 @@ class DeliveryNoteController extends Controller
             });
         }
 
-        // Date range filters
         if ($request->filled('start')) {
             $query->whereDate('added_at', '>=', $request->input('start'));
         }
@@ -37,7 +38,16 @@ class DeliveryNoteController extends Controller
             $query->whereDate('added_at', '<=', $request->input('end'));
         }
 
-        // Compute totals on the full filtered set (before pagination)
+        return $query;
+    }
+
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
+    {
+        $query = $this->buildFilteredQuery($request);
+
         $totalsRow = (clone $query)->selectRaw('
             COALESCE(SUM(RRP), 0) as total_sold,
             COALESCE(SUM(cost), 0) as total_spent,
@@ -73,11 +83,35 @@ class DeliveryNoteController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Export filtered delivery notes as CSV.
      */
-    public function create()
+    public function exportCsv(Request $request)
     {
-        //
+        $records = $this->buildFilteredQuery($request)
+            ->select([
+                'id', 'type', 'supplier', 'family', 'quantity',
+                'unitary_price', 'RRP', 'cost', 'margin', 'profit', 'added_at'
+            ])
+            ->get();
+
+        return $this->streamCsv(
+            $records,
+            ['ID', 'Tipo', 'Proveedor', 'Familia', 'Cantidad', 'Precio Unitario', 'PVP', 'Coste', 'Margen', 'Beneficio', 'Fecha de Alta'],
+            fn ($r) => [
+                $r->id,
+                $r->type === 'corrective' ? 'Correctivo' : ($r->type === 'generic' ? 'Genérico' : $r->type),
+                $r->supplier,
+                $r->family,
+                $r->quantity,
+                $r->unitary_price,
+                $r->RRP,
+                $r->cost,
+                $r->margin,
+                $r->profit,
+                $r->added_at,
+            ],
+            'albaranes.csv'
+        );
     }
 
     /**

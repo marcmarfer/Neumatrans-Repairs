@@ -3,14 +3,20 @@
 namespace App\Http\Controllers;
 use Inertia\Inertia;
 use App\Models\Client;
+use App\Traits\ExportsCsv;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 
 class ClientController extends Controller
 {
-    public function index(Request $request)
+    use ExportsCsv;
+
+    /**
+     * Build the base filtered query shared by index() and exportCsv().
+     */
+    private function buildFilteredQuery(Request $request)
     {
-        $query = Client::withCount('vehicle')
+        $query = Client::query()
             ->orderBy('registered_at', 'desc')
             ->orderBy('id', 'desc');
 
@@ -29,10 +35,38 @@ class ClientController extends Controller
             $query->whereDate('registered_at', '<=', $request->input('end'));
         }
 
+        return $query;
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->buildFilteredQuery($request)->withCount('vehicle');
+
         return Inertia::render('Clients/Index', [
             'clients' => $query->paginate(10)->withQueryString(),
             'filters' => $request->only(['q', 'start', 'end']),
         ]);
+    }
+
+    public function exportCsv(Request $request)
+    {
+        $records = $this->buildFilteredQuery($request)->get();
+
+        return $this->streamCsv(
+            $records,
+            ['ID', 'DNI', 'Nombre', 'Email', 'Teléfono', 'Ciudad', 'Código Postal', 'Fecha de Registro'],
+            fn ($r) => [
+                $r->id,
+                $r->DNI,
+                $r->name,
+                $r->email,
+                $r->telephone,
+                $r->city,
+                $r->postal_code,
+                $r->registered_at,
+            ],
+            'clientes.csv'
+        );
     }
 
     public function store(Request $request)
