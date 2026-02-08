@@ -45,6 +45,14 @@ const props = defineProps({
     type: String,
     default: "No se encontraron opciones",
   },
+  pinnedOptions: {
+    type: Array,
+    default: () => [],
+  },
+  pinnedLabel: {
+    type: String,
+    default: "Destacados",
+  },
 });
 
 const emit = defineEmits(["update:modelValue"]);
@@ -59,7 +67,8 @@ watch(
   () => props.modelValue,
   (newValue) => {
     if (newValue) {
-      const option = props.options.find(
+      const all = [...props.pinnedOptions, ...props.options];
+      const option = all.find(
         (opt) => opt[props.valueField]?.toString() === newValue?.toString()
       );
       selectedOption.value = option || null;
@@ -70,16 +79,28 @@ watch(
   { immediate: true }
 );
 
-function filteredOptions() {
-  if (!props.searchable) return props.options;
-  if (!searchQuery.value) return props.options;
+function filterBySearch(list) {
+  if (!props.searchable || !searchQuery.value) return list;
   const query = searchQuery.value.toLowerCase();
-  return props.options.filter((option) => {
+  return list.filter((option) => {
     const label = option[props.labelField]?.toString().toLowerCase() || "";
     const value = option[props.valueField]?.toString().toLowerCase() || "";
-    const searchableText = `${label} ${value}`.toLowerCase();
-    return searchableText.includes(query);
+    return `${label} ${value}`.includes(query);
   });
+}
+
+function filteredPinnedOptions() {
+  return filterBySearch(props.pinnedOptions);
+}
+
+function filteredOptions() {
+  const pinnedValues = new Set(
+    props.pinnedOptions.map((o) => o[props.valueField]?.toString())
+  );
+  const mainOptions = props.options.filter(
+    (o) => !pinnedValues.has(o[props.valueField]?.toString())
+  );
+  return filterBySearch(mainOptions);
 }
 
 function displayText() {
@@ -206,6 +227,42 @@ onUnmounted(() => {
           </div>
 
           <div class="max-h-48 overflow-auto">
+            <!-- Pinned options -->
+            <template v-if="pinnedOptions.length > 0 && filteredPinnedOptions().length > 0">
+              <div class="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">
+                {{ pinnedLabel }}
+              </div>
+              <div
+                v-for="option in filteredPinnedOptions()"
+                :key="'pinned-' + option[valueField]"
+                @click="selectOption(option)"
+                class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-blue-50 hover:text-blue-900"
+                :class="{
+                  'bg-blue-100 text-blue-900':
+                    selectedOption && selectedOption[valueField] === option[valueField],
+                  'text-gray-900':
+                    !selectedOption || selectedOption[valueField] !== option[valueField],
+                }"
+              >
+                <slot name="option" :option="option">
+                  <span class="block truncate">
+                    {{ option[labelField] || option[valueField] }}
+                  </span>
+                </slot>
+
+                <span
+                  v-if="selectedOption && selectedOption[valueField] === option[valueField]"
+                  class="absolute inset-y-0 right-0 flex items-center pr-4 text-blue-600"
+                >
+                  <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                </span>
+              </div>
+              <div v-if="filteredOptions().length > 0" class="border-t border-gray-200"></div>
+            </template>
+
+            <!-- Regular options -->
             <template v-if="filteredOptions().length > 0">
               <div
                 v-for="option in filteredOptions()"
@@ -249,7 +306,7 @@ onUnmounted(() => {
             </template>
 
             <div
-              v-else
+              v-if="filteredPinnedOptions().length === 0 && filteredOptions().length === 0"
               class="relative cursor-default select-none py-2 pl-3 pr-9 text-gray-700"
             >
               {{ noOptionsText }}

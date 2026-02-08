@@ -13,10 +13,6 @@ use Illuminate\Support\Facades\Redirect;
 class DeliveryNoteController extends Controller
 {
     use ExportsCsv;
-
-    /**
-     * Build the base filtered query shared by index() and exportCsv().
-     */
     private function buildFilteredQuery(Request $request)
     {
         $query = DeliveryNote::query()
@@ -41,9 +37,6 @@ class DeliveryNoteController extends Controller
         return $query;
     }
 
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
         $query = $this->buildFilteredQuery($request);
@@ -68,10 +61,18 @@ class DeliveryNoteController extends Controller
         $suppliers = Supplier::select('id', 'name')->orderBy('name')->get();
         $families = Family::select('id', 'name')->orderBy('name')->get();
 
+        $topSuppliers = DeliveryNote::select('supplier')
+            ->selectRaw('COUNT(*) as usage_count')
+            ->groupBy('supplier')
+            ->orderByDesc('usage_count')
+            ->limit(3)
+            ->pluck('supplier');
+
         return Inertia::render('DeliveryNotes/Index', [
             'delivery_notes' => $delivery_notes,
             'suppliers' => $suppliers,
             'families' => $families,
+            'top_suppliers' => $topSuppliers,
             'totals' => [
                 'totalSold' => $totalSold,
                 'totalSpent' => $totalSpent,
@@ -82,9 +83,6 @@ class DeliveryNoteController extends Controller
         ]);
     }
 
-    /**
-     * Export filtered delivery notes as CSV.
-     */
     public function exportCsv(Request $request)
     {
         $records = $this->buildFilteredQuery($request)

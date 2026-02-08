@@ -30,6 +30,10 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  top_suppliers: {
+    type: Array,
+    default: () => [],
+  },
   filters: {
     type: Object,
     default: () => ({}),
@@ -38,6 +42,10 @@ const props = defineProps({
 
 const sortedSuppliers = computed(() => {
   return [...props.suppliers].sort((a, b) => a.name.localeCompare(b.name));
+});
+
+const pinnedSuppliers = computed(() => {
+  return props.top_suppliers.map(name => ({ name }));
 });
 
 const sortedFamilies = computed(() => {
@@ -429,6 +437,8 @@ function deleteDeliveryNote() {
                     label-field="name"
                     placeholder="Seleccione un proveedor"
                     search-placeholder="Buscar proveedor..."
+                    :pinned-options="pinnedSuppliers"
+                    pinned-label="Más utilizados"
                     required
                     :error="form.errors.supplier"
                   />
