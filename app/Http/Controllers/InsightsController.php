@@ -8,6 +8,7 @@ use App\Models\Repair;
 use App\Models\Vehicle;
 use App\Models\Client;
 use App\Models\DeliveryNote;
+use App\Services\BoostQueryService;
 use Gemini\Laravel\Facades\Gemini;
 use Gemini\Enums\ModelVariation;
 use Gemini\Enums\ModelType;
@@ -15,12 +16,46 @@ use OpenAI;
 
 class InsightsController extends Controller
 {
+    protected BoostQueryService $boostQueryService;
+
+    public function __construct(BoostQueryService $boostQueryService)
+    {
+        $this->boostQueryService = $boostQueryService;
+    }
+
     public function index()
     {
         return Inertia::render('Insights/Index');
     }
 
     public function getQueryResultsOpenAI(Request $request)
+    {
+        $query = $request->input('query');
+
+        if (empty($query)) {
+            return response()->json([
+                'error' => 'La consulta no puede estar vacía'
+            ], 400);
+        }
+
+        try {
+            $result = $this->boostQueryService->processQueryWithBoost(
+                $query,
+                env('OPENAI_API_KEY'),
+                'gpt-4-0125-preview'
+            );
+
+            return response()->json([
+                'response' => $result['response'],
+                'query' => $result['query'],
+                'sql' => $result['executed_sql'] ?? [],
+            ]);
+        } catch (\Throwable $e) {
+            return $this->getQueryResultsOpenAIFallback($request);
+        }
+    }
+
+    protected function getQueryResultsOpenAIFallback(Request $request)
     {
         $repairs = Repair::all();
         $vehicles = Vehicle::all();
@@ -82,11 +117,36 @@ class InsightsController extends Controller
 
         return response()->json([
             'response' => $response['choices'][0]['message']['content'],
-            'query' => $query
+            'query' => $query,
+            'sql' => [],
         ]);
     }
 
-    public function getQueryResultsGeminiFlash(Request $request) {
+    public function getQueryResultsGeminiFlash(Request $request)
+    {
+        $query = $request->input('query');
+
+        if (empty($query)) {
+            return response()->json([
+                'error' => 'La consulta no puede estar vacía'
+            ], 400);
+        }
+
+        try {
+            $result = $this->boostQueryService->processQueryWithBoostGemini($query);
+
+            return response()->json([
+                'response' => $result['response'],
+                'query' => $result['query'],
+                'sql' => $result['executed_sql'] ?? [],
+            ]);
+        } catch (\Throwable $e) {
+            return $this->getQueryResultsGeminiFlashFallback($request);
+        }
+    }
+
+    protected function getQueryResultsGeminiFlashFallback(Request $request)
+    {
         $repairs = Repair::all();
         $vehicles = Vehicle::all();
         $clients = Client::all();
@@ -134,13 +194,13 @@ class InsightsController extends Controller
         Consulta del usuario: '{$query}'
         EOT;
 
-
         $model = ModelType::generateGeminiModel(ModelVariation::FLASH, 2.0);
         $response = Gemini::generativeModel($model)->generateContent($prompt);
 
         return response()->json([
             'response' => $response->text(),
-            'query' => $query
+            'query' => $query,
+            'sql' => [],
         ]);
     }
 }

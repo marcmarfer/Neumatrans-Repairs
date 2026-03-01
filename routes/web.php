@@ -15,6 +15,7 @@ use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\InsightsController;
 use App\Http\Controllers\RepairTrackingController;
 use App\Http\Middleware\PreventIntegrationAccess;
+use App\Http\Middleware\ProductionMiddleware;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\VehicleModelController;
 

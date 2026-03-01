@@ -22,3 +22,7 @@ yarn-error.log
 /.vscode
 /.zed
 builddb.ps1
+
+.cursor/mcp.json
+.cursor/rules/laravel-boost.mdc
+boost.json
