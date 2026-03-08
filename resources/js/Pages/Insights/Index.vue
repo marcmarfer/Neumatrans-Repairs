@@ -1,9 +1,13 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import GoBackButton from "@/Components/GoBackButton.vue";
 import DarkButton from "@/Components/DarkButton.vue";
+import InsightTable from "@/Components/InsightTable.vue";
 import axios from 'axios';
+import { marked } from 'marked';
+
+marked.setOptions({ breaks: true, gfm: true });
 
 const page = usePage();
 
@@ -12,6 +16,46 @@ const openaiResponse = ref('');
 const openaiLoading = ref(false);
 const openaiSql = ref([]);
 const showSql = ref(false);
+
+const TABLE_PLACEHOLDER = '%%TABLE_PLACEHOLDER%%';
+
+function extractTablesFromMarkdown(md) {
+  const tableRegex = /\n?\|[^\n]+\|\n\|[-: |]+\|\n(\|[^\n]+\|\n?)+/g;
+  const tables = [];
+
+  const stripped = md.replace(tableRegex, (match) => {
+    const lines = match.trim().split('\n').filter(l => l.trim());
+    const parseRow = (line) =>
+      line.split('|').map(c => c.trim()).filter(c => c !== '');
+
+    const headers = parseRow(lines[0]);
+    const rows = lines.slice(2).map(parseRow);
+    tables.push({ headers, rows });
+    return '\n' + TABLE_PLACEHOLDER + '\n';
+  });
+
+  return { stripped, tables };
+}
+
+const responseParts = computed(() => {
+  if (!openaiResponse.value) return [];
+
+  const { stripped, tables } = extractTablesFromMarkdown(openaiResponse.value);
+  const chunks = stripped.split(TABLE_PLACEHOLDER);
+  const parts = [];
+  let tableIdx = 0;
+
+  chunks.forEach((chunk, i) => {
+    const html = marked(chunk).trim();
+    if (html) parts.push({ type: 'html', content: html });
+    if (tableIdx < tables.length) {
+      parts.push({ type: 'table', ...tables[tableIdx] });
+      tableIdx++;
+    }
+  });
+
+  return parts;
+});
 
 function searchOpenAI() {
   if (!openaiQuery.value.trim()) return;
@@ -56,7 +100,7 @@ function copyToClipboard(text) {
       <div v-if="page.props.viteAppEnv === 'prod'">
         <div class="flex items-center gap-4 mb-4">
           <h2 class="text-xl font-semibold">Consulta Premium</h2>
-          <span class="text-white text-xs px-2 py-1 rounded-full" style="background: linear-gradient(135deg, #f97316, #f59e0b, #d97706, #b45309, #d97706);">OpenAI GPT-4</span>
+          <span class="text-white text-xs px-2 py-1 rounded-full" style="background: linear-gradient(135deg, #f97316, #f59e0b, #d97706, #b45309, #d97706);">OpenAI GPT-5.4</span>
         </div>
         
         <div class="flex items-center gap-4">
@@ -98,7 +142,10 @@ function copyToClipboard(text) {
             </button>
           </div>
           <div class="p-4 bg-gray-100">
-            <p class="text-lg">{{ openaiResponse }}</p>
+            <template v-for="(part, i) in responseParts" :key="i">
+              <div v-if="part.type === 'html'" class="prose prose-sm max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0" v-html="part.content"></div>
+              <InsightTable v-else :headers="part.headers" :rows="part.rows" class="my-4" />
+            </template>
             <div class="mt-4" v-if="openaiSql.length">
               <button
                 type="button"

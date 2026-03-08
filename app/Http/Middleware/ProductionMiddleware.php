@@ -15,10 +15,10 @@ class ProductionMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (app()->environment('prod')) {
-            return $next($request);
+        if (app()->environment('demo')) {
+            abort(404);
         }
-    
-        abort(404);
+
+        return $next($request);
     }
 } 

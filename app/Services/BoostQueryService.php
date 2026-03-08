@@ -33,7 +33,7 @@ class BoostQueryService
         return is_array($decoded) ? $decoded : [];
     }
 
-    public function processQueryWithBoost(string $userQuery, string $apiKey, string $model = 'gpt-4-0125-preview'): array
+    public function processQueryWithBoost(string $userQuery, string $apiKey, string $model = 'gpt-5.4'): array
     {
         $schema = $this->getDatabaseSchema();
 
@@ -55,14 +55,14 @@ class BoostQueryService
             'messages' => [
                 [
                     'role' => 'system',
-                    'content' => 'Eres un asistente analítico para un taller. Respondes en español con precisión y sin inventar datos.'
+                    'content' => 'Eres Mariano, un asistente analítico para un taller de vehículos. Respondes en español, directo y sin rodeos. Cada consulta es independiente: no ofrezcas seguir la conversación ni propongas otras consultas. Puedes usar formato markdown (negritas, tablas, listas) cuando ayude a la legibilidad. Si la respuesta involucra datos estructurados (rankings, tops, comparativas), usa tablas markdown. Nunca inventas datos.'
                 ],
                 [
                     'role' => 'user',
                     'content' => $answerPrompt
                 ],
             ],
-            'temperature' => 0.3,
+            'temperature' => 0.4,
         ]);
 
         return [
@@ -161,25 +161,40 @@ EOT;
         $resultsJson = json_encode($queryResults, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
         return <<<EOT
-Responde la pregunta usando SOLO los resultados SQL adjuntos.
+Responde la pregunta del usuario usando SOLO los resultados de las consultas SQL adjuntas.
 
-Pregunta:
+PREGUNTA DEL USUARIO:
 {$userQuery}
 
-SQL ejecutado:
+SQL EJECUTADO:
 {$sqlJson}
 
-Resultados:
+RESULTADOS:
 {$resultsJson}
 
-Esquema (apoyo):
+ESQUEMA (referencia):
 {$schemaJson}
 
-Instrucciones:
-- Responde en español.
-- Sé preciso y directo.
-- Si faltan datos, dilo claramente.
-- No inventes.
+REGLAS:
+1. Responde en español, directo, sin rodeos.
+2. NO ofrezcas seguir la conversación, NO propongas otras consultas ni digas "si quieres puedo...". Cada consulta es independiente.
+3. Si la respuesta es simple (un dato, una explicación), responde solo con texto natural.
+4. Si la respuesta involucra varios registros o datos comparativos (rankings, tops, listados), usa una tabla markdown. Ejemplo:
+
+| Proveedor | Familia | Beneficio | Margen | Fecha |
+|-----------|---------|-----------|--------|-------|
+| Maragall | Filtros | 335,18 € | 83,91 % | 8 jun 2011 |
+
+5. Usa negritas solo para destacar datos clave puntuales, no en cada palabra.
+6. Redondea importes a 2 decimales y usa € como moneda.
+7. Formatea fechas de forma corta y legible (ej. "8 jun 2011").
+8. No muestres IDs internos ni nombres de columnas SQL.
+9. Traduce SIEMPRE los valores internos de la base de datos al español:
+   - generic → genérico, corrective → correctivo
+   - reception → recepción, diagnosing → diagnóstico, in_repair → en reparación, finished → finalizado
+   - Cualquier otro valor técnico en inglés debe traducirse a su equivalente natural en español.
+10. Si faltan datos, dilo brevemente.
+11. No inventes datos.
 EOT;
     }
 
