@@ -103,6 +103,8 @@ jobs:
               --exclude="public/storage" \
               "$TMP_DIR/" "$APP_DIR/"
 
+            rm -f bootstrap/cache/config.php bootstrap/cache/packages.php bootstrap/cache/services.php
+
             php artisan migrate:fresh --seed --force
 
             php artisan storage:link || true
