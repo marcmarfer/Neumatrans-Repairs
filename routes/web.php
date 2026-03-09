@@ -70,6 +70,5 @@ Route::get('/insights', [InsightsController::class, 'index'])->name('insights.in
 Route::middleware(ProductionMiddleware::class)->group(function () {
     Route::post('/insights/query-openai', [InsightsController::class, 'getQueryResultsOpenAI'])->name('insights.query.openai');
 });
-Route::post('/insights/query-gemini', [InsightsController::class, 'getQueryResultsGeminiFlash'])->name('insights.query.gemini');
 
 require __DIR__.'/auth.php';

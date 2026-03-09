@@ -7,15 +7,39 @@ use Laravel\Boost\Mcp\Tools\DatabaseSchema;
 use Laravel\Mcp\Server\Tools\ToolResult;
 use Illuminate\Support\Facades\DB;
 use OpenAI;
-use Gemini\Laravel\Facades\Gemini;
-use Gemini\Enums\ModelVariation;
-use Gemini\Enums\ModelType;
 
 class BoostQueryService
 {
-    /**
-     * Convierte un ToolResult JSON de Laravel MCP a array PHP.
-     */
+    protected const VALUE_TRANSLATIONS = [
+        'generic' => 'Genérico',
+        'corrective' => 'Correctivo',
+        'reception' => 'Recepción',
+        'diagnosing' => 'Diagnóstico',
+        'in_repair' => 'En reparación',
+        'finished' => 'Finalizado',
+        'pending' => 'Pendiente',
+        'completed' => 'Completado',
+        'cancelled' => 'Cancelado',
+    ];
+
+    protected const HEADER_TRANSLATIONS = [
+        'id' => 'ID', 'name' => 'Nombre', 'type' => 'Tipo', 'status' => 'Estado',
+        'description' => 'Descripción', 'total' => 'Total', 'cost' => 'Coste',
+        'price' => 'Precio', 'quantity' => 'Cantidad', 'created_at' => 'Creado',
+        'updated_at' => 'Actualizado', 'added_at' => 'Fecha registro',
+        'completed_at' => 'Completado', 'brand' => 'Marca', 'model' => 'Modelo',
+        'plate' => 'Matrícula', 'phone' => 'Teléfono', 'email' => 'Email',
+        'address' => 'Dirección', 'nif' => 'NIF', 'family' => 'Familia',
+        'supplier' => 'Proveedor', 'reference' => 'Referencia', 'number' => 'Número',
+        'benefit' => 'Beneficio', 'margin' => 'Margen', 'month' => 'Mes',
+        'count' => 'Cantidad', 'total_amount' => 'Importe total',
+        'total_count' => 'Total', 'avg_amount' => 'Media', 'max_amount' => 'Máximo',
+        'min_amount' => 'Mínimo', 'total_repairs' => 'Total reparaciones',
+        'completed_repairs' => 'Completadas', 'pending_repairs' => 'Pendientes',
+        'total_vehicles' => 'Total vehículos', 'unique_clients' => 'Clientes únicos',
+        'total_clients' => 'Total clientes',
+    ];
+
     protected function decodeToolResult(ToolResult $result): array
     {
         if ($result->isError || empty($result->content)) {
@@ -33,7 +57,7 @@ class BoostQueryService
         return is_array($decoded) ? $decoded : [];
     }
 
-    public function processQueryWithBoost(string $userQuery, string $apiKey, string $model = 'gpt-5.4'): array
+    public function processQueryWithBoost(string $userQuery, string $apiKey, string $model = 'gpt-5-mini'): array
     {
         $schema = $this->getDatabaseSchema();
 
@@ -46,7 +70,9 @@ class BoostQueryService
             $queryResults = $this->fetchRelevantData($dataNeeds, $executedSql);
         }
 
-        $answerPrompt = $this->buildAnswerPrompt($userQuery, $schema, $queryResults, $executedSql);
+        $tables = $this->buildTablesFromResults($queryResults);
+        $summary = $this->summarizeForAI($queryResults);
+        $answerPrompt = $this->buildAnswerPrompt($userQuery, $schema, $summary, $executedSql);
 
         $client = OpenAI::client($apiKey);
         
@@ -55,21 +81,20 @@ class BoostQueryService
             'messages' => [
                 [
                     'role' => 'system',
-                    'content' => 'Eres Mariano, un asistente analítico para un taller de vehículos. Respondes en español, directo y sin rodeos. Cada consulta es independiente: no ofrezcas seguir la conversación ni propongas otras consultas. Puedes usar formato markdown (negritas, tablas, listas) cuando ayude a la legibilidad. Si la respuesta involucra datos estructurados (rankings, tops, comparativas), usa tablas markdown. Nunca inventas datos.'
+                    'content' => 'Eres Mariano, un asistente analítico para un taller de vehículos. Respondes en español, directo y sin rodeos. Cada consulta es independiente: no ofrezcas seguir la conversación ni propongas otras consultas. NO generes tablas markdown. Para indicar dónde debe mostrarse la tabla de datos, escribe el marcador [TABLA] en una línea aparte. La tabla se renderiza automáticamente. Sé breve: una frase de contexto, luego [TABLA], y opcionalmente un comentario final corto. Nunca inventas datos.'
                 ],
                 [
                     'role' => 'user',
                     'content' => $answerPrompt
                 ],
             ],
-            'temperature' => 0.4,
         ]);
 
         return [
             'response' => $response['choices'][0]['message']['content'],
             'query' => $userQuery,
-            'data_used' => array_keys($queryResults),
             'executed_sql' => $executedSql,
+            'tables' => $tables,
         ];
     }
 
@@ -86,7 +111,9 @@ Reglas:
 - Usa columnas reales.
 - Si hay año/mes/fecha en la pregunta, filtra por fecha.
 - Si se pregunta por inversión por familia, usa SUM(cost) GROUP BY family.
-- Añade LIMIT cuando proceda.
+- NO uses LIMIT a menos que el usuario pida explícitamente un número concreto (ej. "los 5 mejores", "top 3").
+- Evita seleccionar columnas de ID interno (id, *_id) a menos que sean necesarias para JOINs. Prefiere columnas con datos legibles.
+- Usa SIEMPRE alias en español para las columnas. Ej: SUM(total) AS total_ventas, COUNT(*) AS cantidad, name AS nombre.
 - Devuelve SOLO JSON válido:
 {
   "queries": [
@@ -94,6 +121,13 @@ Reglas:
     "SELECT ..."
   ]
 }
+
+IMPORTANTE - VALORES EN LA BASE DE DATOS:
+Los valores se almacenan en INGLÉS. El usuario pregunta en español, pero el SQL debe usar los valores en inglés.
+Traducciones conocidas (español → valor en BD):
+  Tipos: genérico → 'generic', correctivo → 'corrective'
+  Estados de reparación: recepción → 'reception', diagnóstico → 'diagnosing', en reparación → 'in_repair', finalizado → 'finished'
+  Cualquier otro término en español que parezca un valor de filtro, tradúcelo al inglés para el SQL.
 
 Pregunta:
 {$userQuery}
@@ -108,7 +142,6 @@ EOT;
                 ['role' => 'system', 'content' => 'Eres experto en SQL MySQL y análisis de datos.'],
                 ['role' => 'user', 'content' => $plannerPrompt],
             ],
-            'temperature' => 0.1,
         ]);
 
         $raw = trim($planResponse['choices'][0]['message']['content'] ?? '');
@@ -154,14 +187,14 @@ EOT;
         return $resultSets;
     }
 
-    protected function buildAnswerPrompt(string $userQuery, array $schema, array $queryResults, array $executedSql): string
+    protected function buildAnswerPrompt(string $userQuery, array $schema, array $summary, array $executedSql): string
     {
         $schemaJson = json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         $sqlJson = json_encode($executedSql, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-        $resultsJson = json_encode($queryResults, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $summaryJson = json_encode($summary, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
         return <<<EOT
-Responde la pregunta del usuario usando SOLO los resultados de las consultas SQL adjuntas.
+Responde la pregunta del usuario basándote en los resultados SQL.
 
 PREGUNTA DEL USUARIO:
 {$userQuery}
@@ -169,55 +202,84 @@ PREGUNTA DEL USUARIO:
 SQL EJECUTADO:
 {$sqlJson}
 
-RESULTADOS:
-{$resultsJson}
+RESULTADOS (resumen — el usuario verá la tabla completa con todos los registros):
+{$summaryJson}
 
 ESQUEMA (referencia):
 {$schemaJson}
 
+FORMATO DE RESPUESTA:
+- Escribe una frase breve de contexto o resumen.
+- Luego escribe [TABLA] en una línea aparte para insertar la tabla de datos.
+- Opcionalmente, añade un comentario final breve si aporta valor.
+- NO generes tablas markdown. La tabla se renderiza automáticamente donde pongas [TABLA].
+
+Ejemplo de formato:
+Se encontraron **X registros** de tipo genérico.
+
+[TABLA]
+
+El proveedor más frecuente es **Nombre** con Y registros.
+
 REGLAS:
-1. Responde en español, directo, sin rodeos.
-2. NO ofrezcas seguir la conversación, NO propongas otras consultas ni digas "si quieres puedo...". Cada consulta es independiente.
-3. Si la respuesta es simple (un dato, una explicación), responde solo con texto natural.
-4. Si la respuesta involucra varios registros o datos comparativos (rankings, tops, listados), usa una tabla markdown. Ejemplo:
-
-| Proveedor | Familia | Beneficio | Margen | Fecha |
-|-----------|---------|-----------|--------|-------|
-| Maragall | Filtros | 335,18 € | 83,91 % | 8 jun 2011 |
-
-5. Usa negritas solo para destacar datos clave puntuales, no en cada palabra.
-6. Redondea importes a 2 decimales y usa € como moneda.
-7. Formatea fechas de forma corta y legible (ej. "8 jun 2011").
-8. No muestres IDs internos ni nombres de columnas SQL.
-9. Traduce SIEMPRE los valores internos de la base de datos al español:
-   - generic → genérico, corrective → correctivo
-   - reception → recepción, diagnosing → diagnóstico, in_repair → en reparación, finished → finalizado
-   - Cualquier otro valor técnico en inglés debe traducirse a su equivalente natural en español.
-10. Si faltan datos, dilo brevemente.
-11. No inventes datos.
+1. Sé conciso. La tabla habla por sí sola, no repitas sus datos en el texto.
+2. Si ves "total_registros: N", hay N registros totales. La "muestra" es solo para tu análisis.
+3. Responde en español, directo, sin rodeos.
+4. NO ofrezcas seguir la conversación ni propongas otras consultas.
+5. Usa negritas para datos clave puntuales.
+6. Redondea importes a 2 decimales con €.
+7. Formatea fechas legibles (ej. "8 jun 2011").
+8. No muestres IDs internos ni nombres técnicos de columnas.
+9. No inventes datos.
+10. No expliques traducciones ni mapeos de valores. Los datos ya se muestran traducidos al usuario.
 EOT;
     }
 
-    public function processQueryWithBoostGemini(string $userQuery): array
+    protected function buildTablesFromResults(array $queryResults): array
     {
-        $schema = $this->getDatabaseSchema();
-        
-        $dataNeeds = $this->analyzeQueryNeeds($userQuery, $schema);
-        
-        $executedSql = [];
-        $relevantData = $this->fetchRelevantData($dataNeeds, $executedSql);
-        
-        $prompt = $this->buildOptimizedPrompt($userQuery, $schema, $relevantData);
-        
-        $model = ModelType::generateGeminiModel(ModelVariation::FLASH, 2.0);
-        $response = Gemini::generativeModel($model)->generateContent($prompt);
+        $tables = [];
 
-        return [
-            'response' => $response->text(),
-            'query' => $userQuery,
-            'data_used' => array_keys($relevantData),
-            'executed_sql' => $executedSql,
-        ];
+        foreach ($queryResults as $rows) {
+            if (empty($rows) || !is_array($rows)) continue;
+
+            $firstRow = $rows[0] ?? null;
+            if (!is_array($firstRow)) continue;
+
+            $rawHeaders = array_keys($firstRow);
+            $headers = array_map(
+                fn ($h) => self::HEADER_TRANSLATIONS[$h] ?? ucfirst(str_replace('_', ' ', $h)),
+                $rawHeaders
+            );
+
+            $tableRows = array_map(fn ($row) => array_map(function ($value) {
+                if (is_string($value) && isset(self::VALUE_TRANSLATIONS[$value])) {
+                    return self::VALUE_TRANSLATIONS[$value];
+                }
+                return $value ?? '';
+            }, array_values($row)), $rows);
+
+            $tables[] = ['headers' => $headers, 'rows' => $tableRows];
+        }
+
+        return $tables;
+    }
+
+    protected function summarizeForAI(array $queryResults): array
+    {
+        $summary = [];
+
+        foreach ($queryResults as $key => $rows) {
+            if (!is_array($rows)) {
+                $summary[$key] = $rows;
+                continue;
+            }
+            $total = count($rows);
+            $summary[$key] = $total <= 20
+                ? $rows
+                : ['total_registros' => $total, 'muestra' => array_slice($rows, 0, 20)];
+        }
+
+        return $summary;
     }
 
     protected function getDatabaseSchema(): array
@@ -343,8 +405,7 @@ EOT;
                     SUM(total) as total_amount
                    FROM delivery_notes 
                    GROUP BY DATE_FORMAT(added_at, '%Y-%m')
-                   ORDER BY month DESC
-                   LIMIT 24"
+                   ORDER BY month DESC"
                 : "SELECT 
                     COUNT(*) as total_count,
                     SUM(total) as total_amount,
@@ -377,7 +438,7 @@ EOT;
         $queryTool = new DatabaseQuery();
         
         try {
-            $sql = "SELECT * FROM {$table} ORDER BY id DESC LIMIT 50";
+            $sql = "SELECT * FROM {$table} ORDER BY id DESC";
             $executedSql[] = $sql;
             
             $result = $queryTool->handle(['query' => $sql]);
@@ -389,47 +450,5 @@ EOT;
         }
 
         return [];
-    }
-
-    protected function buildOptimizedPrompt(string $userQuery, array $schema, array $relevantData): string
-    {
-        $schemaJson = json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-        $dataJson = json_encode($relevantData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-
-        return <<<EOT
-Eres un asistente analítico preciso para un taller de reparación de vehículos. Tu tarea es responder con información exacta basada en los datos proporcionados, con un tono directo y conciso.
-
-ESQUEMA DE LA BASE DE DATOS:
-{$schemaJson}
-
-DATOS RELEVANTES PARA TU CONSULTA:
-{$dataJson}
-
-INSTRUCCIONES IMPORTANTES SOBRE LOS DATOS:
-- En las NOTAS DE ENTREGA (albaranes), el campo "added_at" es la fecha de registro del albarán.
-- Debes utilizar este campo para análisis temporales (diario, mensual, anual).
-- Para análisis por mes, extrae el mes de este campo de fecha.
-- Todos los cálculos de tendencias temporales deben basarse en estas fechas de registro.
-- Los datos proporcionados son específicos y relevantes para responder la consulta. Si necesitas información adicional, indica qué datos faltan.
-
-INSTRUCCIONES PARA EL ANÁLISIS:
-1. Analiza los datos disponibles y responde DIRECTAMENTE a la consulta, sin rodeos ni explicaciones innecesarias.
-2. Ve al grano en tus respuestas, proporcionando la información relevante sin estructuras complejas.
-3. Si preguntan por información específica (como "qué mes aportó más beneficios"), responde de forma directa:
-   Ejemplo: "Julio fue el mes que más beneficios te aportó (8.500€), principalmente gracias al proveedor X."
-4. NO organices la información en secciones o categorías a menos que sea absolutamente necesario.
-5. Cuando los datos sean insuficientes para responder, sé breve y directo al indicarlo.
-
-INSTRUCCIONES PARA EL ESTILO DE RESPUESTA:
-- Usa un tono conversacional y cercano, pero ve directo al punto.
-- Proporciona respuestas en párrafos concisos, evitando listas y secciones cuando sea posible.
-- Incluye emojis ocasionales para dar calidez, especialmente en saludos y despedidas.
-- Destaca lo más importante de tu análisis en una o dos frases.
-- Ofrece siempre el dato o conclusión principal al inicio de tu respuesta.
-- Evita estructuras complejas o formatos elaborados.
-- Termina con una breve despedida y un emoji apropiado.
-
-Consulta del usuario: '{$userQuery}'
-EOT;
     }
 }
