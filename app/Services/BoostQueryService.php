@@ -4,7 +4,8 @@ namespace App\Services;
 
 use Laravel\Boost\Mcp\Tools\DatabaseQuery;
 use Laravel\Boost\Mcp\Tools\DatabaseSchema;
-use Laravel\Mcp\Server\Tools\ToolResult;
+use Laravel\Mcp\Request as McpRequest;
+use Laravel\Mcp\Response as McpResponse;
 use Illuminate\Support\Facades\DB;
 use OpenAI;
 
@@ -40,19 +41,14 @@ class BoostQueryService
         'total_clients' => 'Total clientes',
     ];
 
-    protected function decodeToolResult(ToolResult $result): array
+    protected function decodeResponse(McpResponse $response): array
     {
-        if ($result->isError || empty($result->content)) {
+        if ($response->isError()) {
             return [];
         }
 
-        $firstContent = $result->content[0] ?? null;
-
-        if (! $firstContent || ! property_exists($firstContent, 'text')) {
-            return [];
-        }
-
-        $decoded = json_decode($firstContent->text, true);
+        $text = (string) $response->content();
+        $decoded = json_decode($text, true);
 
         return is_array($decoded) ? $decoded : [];
     }
@@ -174,11 +170,8 @@ EOT;
         foreach ($sqlCandidates as $index => $sql) {
             try {
                 $executedSql[] = $sql;
-                $result = $queryTool->handle(['query' => $sql]);
-
-                if ($result instanceof ToolResult) {
-                    $resultSets['query_'.($index + 1)] = $this->decodeToolResult($result);
-                }
+                $result = $queryTool->handle(new McpRequest(['query' => $sql]));
+                $resultSets['query_'.($index + 1)] = $this->decodeResponse($result);
             } catch (\Throwable $e) {
                 continue;
             }
@@ -286,11 +279,8 @@ EOT;
     {
         try {
             $schemaTool = new DatabaseSchema();
-            $result = $schemaTool->handle([]);
-            
-            if ($result instanceof ToolResult) {
-                return $this->decodeToolResult($result);
-            }
+            $result = $schemaTool->handle(new McpRequest([]));
+            return $this->decodeResponse($result);
         } catch (\Exception $e) {
             return $this->getBasicSchema();
         }
@@ -382,11 +372,8 @@ EOT;
             
             if ($sql) {
                 $executedSql[] = $sql;
-                $result = $queryTool->handle(['query' => $sql]);
-                
-                if ($result instanceof ToolResult) {
-                    return $this->decodeToolResult($result);
-                }
+                $result = $queryTool->handle(new McpRequest(['query' => $sql]));
+                return $this->decodeResponse($result);
             }
         } catch (\Exception $e) {
             return $this->getLimitedData($table, $executedSql);
@@ -441,11 +428,8 @@ EOT;
             $sql = "SELECT * FROM {$table} ORDER BY id DESC";
             $executedSql[] = $sql;
             
-            $result = $queryTool->handle(['query' => $sql]);
-            
-            if ($result instanceof ToolResult) {
-                return $this->decodeToolResult($result);
-            }
+            $result = $queryTool->handle(new McpRequest(['query' => $sql]));
+            return $this->decodeResponse($result);
         } catch (\Exception $e) {
         }
 
