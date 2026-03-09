@@ -51,14 +51,14 @@ jobs:
       - name: Archive application (excluding .env)
         run: |
           rm -f .env
-          tar -czf /tmp/app.tgz \
+          tar -czf /tmp/app-prod.tgz \
             --exclude='./.git' \
             --exclude='./.github' \
             --exclude='./.env' \
             --exclude='./.env.*' \
             --exclude='./node_modules' \
             .
-          mv /tmp/app.tgz ./app.tgz
+          mv /tmp/app-prod.tgz ./app-prod.tgz
 
       - name: Upload files to server (SCP)
         uses: appleboy/scp-action@v0.1.7
@@ -67,8 +67,9 @@ jobs:
           username: ${{ secrets.PROD_SSH_USER }}
           password: ${{ secrets.PROD_SSH_PASSWORD }}
           port: ${{ secrets.PROD_SSH_PORT }}
-          source: "app.tgz"
+          source: "app-prod.tgz"
           target: "/tmp"
+          overwrite: true
 
       - name: Deploy on server
         uses: appleboy/ssh-action@v0.1.10
@@ -81,13 +82,13 @@ jobs:
             set -euo pipefail
 
             APP_DIR="${{ secrets.PROD_SSH_DIR }}"
-            TMP_DIR="/tmp/deploy-$(date +%s)"
+            TMP_DIR="/tmp/deploy-prod-$(date +%s)"
 
             [ -f "$APP_DIR/.env" ] || { echo "ERROR: missing $APP_DIR/.env"; exit 1; }
 
             mkdir -p "$TMP_DIR"
-            tar -xzf /tmp/app.tgz -C "$TMP_DIR"
-            rm -f /tmp/app.tgz
+            tar -xzf /tmp/app-prod.tgz -C "$TMP_DIR"
+            rm -f /tmp/app-prod.tgz
 
             cd "$APP_DIR"
             php artisan down || true
