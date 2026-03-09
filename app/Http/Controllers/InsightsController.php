@@ -39,7 +39,7 @@ class InsightsController extends Controller
 
         $result = $this->boostQueryService->processQueryWithBoost(
             $query,
-            env('OPENAI_API_KEY'),
+            config('services.openai.api_key'),
             $model
         );
 
